@@ -1,8 +1,8 @@
-"""Canonical JSON and domain-separated hashing (Spec.md section 2).
+"""Canonical JSON and domain-separated hashing.
 
-Every byte that is signed, hashed into a Merkle tree, or bound into a
-transcript goes through `canon()`. The encoding is deliberately narrow so the
-Python (E1), Rust (E2) and Go implementations produce identical bytes:
+Every byte that is signed (verdicts, receipts), authenticated (escrow records)
+or chained (the audit log) goes through `canon()`. The encoding is deliberately
+narrow so that any re-implementation produces identical bytes:
 
   * values: null, true/false, integers, strings, arrays, objects
   * NO floats -- scores are carried as integer parts-per-million (ppm)

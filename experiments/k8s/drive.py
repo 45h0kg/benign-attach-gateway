@@ -193,7 +193,6 @@ def main():
                 break
             time.sleep(0.5)
         calls = collect(name)
-        reached = [c for c in calls if not c.get("summary") and c.get("ok") and c.get("status", 0) < 500]
         results[name] = {"calls": calls, "internal_received": received("lab", "internal-api"),
                          "external_received": received("lab", "external-sink"),
                          "counters": hook.counters() if supervised else None}

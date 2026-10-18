@@ -4,5 +4,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends iptables && rm 
 WORKDIR /opt/escrow
 COPY escrow/ /opt/escrow/escrow/
 COPY bpf/escrow_connect4.bpf.o /opt/escrow/escrow_connect4.bpf.o
+COPY bpf/ssl_sniff.bpf.o /opt/escrow/ssl_sniff.bpf.o
 ENV PYTHONPATH=/opt/escrow
 ENTRYPOINT ["python3", "-m", "escrow.cli"]

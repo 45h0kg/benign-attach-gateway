@@ -33,7 +33,7 @@ def run_suite(mode: str):
     print(f"\n=== hold point: {mode} ===")
     H = Harness(mode=mode, deadline_ms=1000)
     U, I, V = H.U, H.interceptor, H.verifier
-    pa, pb = PODS["pod-a"], PODS["pod-b"]
+    pa = PODS["pod-a"]
     try:
         # T0 allowed connection is released; destination sees exactly the parked bytes
         r = H.agent("pod-a", U["allowed"], b"hello")

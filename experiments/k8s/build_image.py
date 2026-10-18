@@ -56,7 +56,6 @@ def main(out_path: str):
                 if p.endswith(".so"):
                     files |= libs_of(p)
     # python's own .so modules and their libs
-    dyn = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(PY))), "lib/python3.13/lib-dynload")
     for lib in ("libssl.so.3", "libcrypto.so.3", "libffi.so.8", "libbz2.so.1.0", "liblzma.so.5", "libsqlite3.so.0",
                 "libreadline.so.8", "libnss_dns.so.2", "libnss_files.so.2", "libresolv.so.2", "libgcc_s.so.1",
                 "libstdc++.so.6", "libmnl.so.0", "libnftnl.so.11", "libnfnetlink.so.0", "libnetfilter_conntrack.so.3"):

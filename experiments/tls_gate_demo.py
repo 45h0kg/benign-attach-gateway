@@ -87,7 +87,7 @@ def read_record(sock, buf):
         if not b:
             return None, buf
         buf += b
-    ctype, ver, length = buf[0], buf[1:3], struct.unpack("!H", buf[3:5])[0]
+    length = struct.unpack("!H", buf[3:5])[0]          # record header: type(1) version(2) length(2)
     while len(buf) < 5 + length:
         b = sock.recv(4096)
         if not b:

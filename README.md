@@ -315,20 +315,6 @@ How each goal is met is spelled out in **[`docs/THREAT_MODEL.md`](docs/THREAT_MO
 
 ---
 
-## Citing / related work
-
-```
-A. S. Gopalakrishna, "Connection Escrow: Holding AI-Agent Pod Egress in the Kernel Until an
-Isolated Verifier Rules," preprint, 2026.
-```
-
-Related earlier work: [zk-proof-gateway](https://github.com/45h0kg/zk-proof-gateway).
-
-> **Note on disclosure/patent order.** If you intend to file a patent on the mechanisms here (kernel-held
-> verifier-gated single-use release; content gating without TLS termination), file the provisional **before**
-> making the repository or the paper public — most jurisdictions outside the US grace period treat your own
-> publication as prior art against your filing.
-
 ## License
 
 MIT (see `LICENSE`). Note: MIT grants no express patent licence; choose deliberately before relying on it for

@@ -43,7 +43,6 @@ def run_task(name, task, supervised=False, env=None):
                  "command": ["sh", "-c", "until [ -f /tmp/go ]; do sleep 0.2; done; exec python3 /opt/escrow/lab/agent.py"],
                  "env": [{"name": "AGENT_NAME", "value": name}, {"name": "TASK", "value": json.dumps(task)}]
                         + [{"name": k, "value": v} for k, v in env.items()]}
-    labels = "escrow.io/supervised=true" if supervised else ""
     overrides = {"metadata": {"labels": {"app": "agent", **({"escrow.io/supervised": "true"} if supervised else {})}},
                  "spec": {"serviceAccountName": "agent", "containers": [container]}}
     kc("-n", "lab", "run", name, "--image=escrow/lab:dev", "--restart=Never", "--overrides=" + json.dumps(overrides))

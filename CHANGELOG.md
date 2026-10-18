@@ -1,18 +1,26 @@
 # Changelog
 
-## 0.1.0 — initial reference implementation
+## 0.3.0 — content gate across TLS runtimes; regenerated canonical run
 
-* Python E1 engine (`python/pcb`): canonical JSON, pure-Python Ed25519, Merkle receipts, typed-null sidecar, mock
-  attestation, negation-stratified Datalog, provenance rarity score, LTT calibration (score-ordered and
-  learn-then-test), six-step gateway, hash-chained audit, gateway receipts, deny-by-default case endpoint,
-  zk-attach/v0 composition (Sigma engine reused from 45h0kg/zk-proof-gateway).
-* Rust E2 engine (`rust/pcbv`): the same chain with ed25519-dalek and cap-aware 2-aggregate Bulletproofs; `serve`,
-  `verify`, `bench`, `vectors`, `zk-prove`.
-* Go services (`go/`): gateway (MCP + A2A, audit, receipts, case store; verification delegated to `pcbv serve`) and
-  sidecar (typed nulls, mock quotes). Standard library only.
-* Seeded synthetic data generator and scripted agents; calibration, evaluation, adversarial suite T0–T11 (+ known-gap
-  check T5b, zk-attach and Topology B checks), wire-level e2e on both stacks, cross-engine vectors, microbenchmarks.
-* Dockerfiles, compose, Helm chart with deny-by-default NetworkPolicies and durable audit PVC; CI workflow including
-  image builds, `helm lint` and a kind install.
-* Not done in this release: real hardware attestation; the paper's public benchmarks; containers and the Helm chart
-  were not built or installed in the authoring environment (no registry access) — CI covers them.
+* Content gate covers three runtime shapes with two kernel programs: shared OpenSSL (`SSL_write`/`SSL_write_ex` in
+  `libssl.so`), statically linked OpenSSL/BoringSSL (same symbols inside the agent binary) and Go `crypto/tls`
+  (`crypto/tls.(*Conn).Write`, Go register ABI). `escrow.tlsview` selects the program and symbol from the agent's ELF.
+* `experiments/agents/`: Go and statically linked C agents; `experiments/tls_gate_demo.py [openssl|go|static|all]`.
+* `results/` regenerated from one logged run of `experiments/run_all.sh` (36/36 eBPF, 34/34 iptables, 3/3 runtimes);
+  `results/RESULTS.md` is generated from `bench_*.json` and `execution_log.txt`.
+* Comprehensive README and `docs/` (architecture, threat model, reproduction).
+
+## 0.2.0 — on-cluster enforcement
+
+* Node agent mode for Kubernetes: pod registry from the API server, cgroup discovery under `kubepods`, per-pod attach,
+  DNS pinning via `cgroup/sendmsg4`, `sockops` peer index for cross-namespace attribution; `deploy/k8s/` manifests.
+* Cluster experiments on k3s: enforcement against real pods, sidecar-proxy bypass comparison, 6 pods x 100 connections.
+* Content gate (first version): `SSL_write` uprobe, first-application-record hold, logistic-regression placeholder model.
+
+## 0.1.0 — connection escrow
+
+* `cgroup/connect4` hold point (socket cookie -> {dst, cgroup, pid}, destination rewrite), iptables `REDIRECT` fallback.
+* Interceptor: attribution join (cookie, `/proc`, cgroup -> SPIFFE registry), parked first bytes, HMAC-authenticated
+  records, single-use socket-bound release gate, deadline, hash-chained signed receipts.
+* Verifier: rule engine (SNI/Host, service, address, port, method/path), per-workload budget, hold/release.
+* Adversarial suite (`tests/test_escrow.py`), latency microbenchmark (`bench/bench.py`), CLI smoke test.
