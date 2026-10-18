@@ -16,7 +16,7 @@ deployed. For the threat model see [THREAT_MODEL.md](THREAT_MODEL.md); for the c
 | verifier | its own pod, own signing key | evaluate policy on the pod identity, return a signed verdict bound to the socket; `allow`/`deny`/`hold` |
 | registry | node agent | map cgroup path → pod identity (uid, namespace, service account, SPIFFE id) |
 | audit log | both | hash-chained, signed receipts of every decision |
-| TLS uprobe (`ssl_sniff`) + content model | node agent / verifier | optional: read plaintext at the TLS write boundary (`SSL_write` shared or static, or Go `crypto/tls.(*Conn).Write`), score it, gate content without terminating TLS |
+| TLS uprobe (`ssl_sniff`) + content model | node agent / verifier | optional: read plaintext at `SSL_write`, score it, gate content without terminating TLS |
 
 Code map: `bpf/escrow_connect4.bpf.c`, `bpf/ssl_sniff.bpf.c`, `escrow/bpfload.py`, `escrow/tlsview.py`,
 `escrow/attribution.py`, `escrow/wire.py`, `escrow/interceptor.py`, `escrow/verifier.py`, `escrow/mlcheck.py`,
@@ -56,7 +56,7 @@ verifier’s own — are never rewritten, so there is no redirection loop.
 
 - **`escrow_connect4`** (`cgroup/connect4`): runs inside `connect(2)`. For TCP it reads the socket cookie
   (`bpf_get_socket_cookie`), stores `{original dst, cgroup id, pid}` keyed by the cookie in `escrow_map`
-  (LRU hash), and rewrites `user_ip4`/`user_port` to the interceptor. 98 instructions including the UDP rule and counters, no backward jumps, no loops.
+  (LRU hash), and rewrites `user_ip4`/`user_port` to the interceptor. ~45 instructions, no loops.
 - **`escrow_sendmsg4`** (`cgroup/sendmsg4`): applies the UDP rule to unconnected datagrams — allow the
   configured resolver, deny the rest (`EPERM`).
 - **`escrow_sockops`** (`sockops`, on `ACTIVE_ESTABLISHED`): writes `{local addr, local port}→cookie` into
