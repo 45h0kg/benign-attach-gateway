@@ -1,0 +1,12 @@
+rust/pcbv/target/
+.bin/
+__pycache__/
+*.pyc
+data/
+results/vectors.json
+results/bench_fixtures.json
+results/calibration_rows.jsonl
+results/eval_rows_*.jsonl
+results/audit_*.jsonl
+experiments/agents/go_agent
+experiments/agents/static_agent

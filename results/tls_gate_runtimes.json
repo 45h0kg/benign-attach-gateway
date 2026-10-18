@@ -1,0 +1,121 @@
+[
+ {
+  "runtime": "openssl",
+  "probe_in": "libssl.so.3",
+  "symbols": [
+   "SSL_write",
+   "SSL_write_ex"
+  ],
+  "decisions": [
+   {
+    "verdict": "allow",
+    "p": 0.001,
+    "reasons": [],
+    "request": "GET /v1/items HTTP/1.1",
+    "plaintext_seen": "GET /v1/items HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n"
+   },
+   {
+    "verdict": "deny",
+    "p": 0.999,
+    "reasons": [
+     "sensitive_kw",
+     "pan_like",
+     "sensitive_path",
+     "mutating"
+    ],
+    "request": "POST /transfer HTTP/1.1",
+    "plaintext_seen": "POST /transfer HTTP/1.1\r\nHost: localhost\r\nContent-Length: 28\r\nConnection: close\r\n\r\nSECRET_CARD=4111111111111111"
+   }
+  ],
+  "server_received": [
+   {
+    "path": "/v1/items",
+    "body": ""
+   }
+  ],
+  "agent": [
+   "AGENT request /v1/items        -> cert OK, server replied b'HTTP/1.0 200 OK'",
+   "AGENT request /transfer        -> BLOCKED (ConnectionResetError: [Errno 104] Connection reset by peer)"
+  ],
+  "pass": true
+ },
+ {
+  "runtime": "go",
+  "probe_in": "go_agent",
+  "symbols": [
+   "crypto/tls.(*Conn).Write"
+  ],
+  "decisions": [
+   {
+    "verdict": "allow",
+    "p": 0.001,
+    "reasons": [],
+    "request": "GET /v1/items HTTP/1.1",
+    "plaintext_seen": "GET /v1/items HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n"
+   },
+   {
+    "verdict": "deny",
+    "p": 0.999,
+    "reasons": [
+     "sensitive_kw",
+     "pan_like",
+     "sensitive_path",
+     "mutating"
+    ],
+    "request": "POST /transfer HTTP/1.1",
+    "plaintext_seen": "POST /transfer HTTP/1.1\r\nHost: localhost\r\nContent-Length: 28\r\nConnection: close\r\n\r\nSECRET_CARD=4111111111111111"
+   }
+  ],
+  "server_received": [
+   {
+    "path": "/v1/items",
+    "body": ""
+   }
+  ],
+  "agent": [
+   "AGENT(go) request /v1/items        -> cert OK, server replied \"HTTP/1.0 200 OK\"",
+   "AGENT(go) request /transfer        -> BLOCKED (read tcp 127.0.0.1:37098->127.0.0.1:33725: read: connection reset by peer)"
+  ],
+  "pass": true
+ },
+ {
+  "runtime": "static",
+  "probe_in": "static_agent",
+  "symbols": [
+   "SSL_write",
+   "SSL_write_ex"
+  ],
+  "decisions": [
+   {
+    "verdict": "allow",
+    "p": 0.001,
+    "reasons": [],
+    "request": "GET /v1/items HTTP/1.1",
+    "plaintext_seen": "GET /v1/items HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n"
+   },
+   {
+    "verdict": "deny",
+    "p": 0.999,
+    "reasons": [
+     "sensitive_kw",
+     "pan_like",
+     "sensitive_path",
+     "mutating"
+    ],
+    "request": "POST /transfer HTTP/1.1",
+    "plaintext_seen": "POST /transfer HTTP/1.1\r\nHost: localhost\r\nContent-Length: 28\r\nConnection: close\r\n\r\nSECRET_CARD=4111111111111111"
+   }
+  ],
+  "server_received": [
+   {
+    "path": "/v1/items",
+    "body": ""
+   }
+  ],
+  "agent": [
+   "AGENT(static) request /v1/items        -> cert OK, server replied 'HTTP/1.0 200 OK'",
+   "AGENT(static) request /transfer        -> BLOCKED (reset)"
+  ],
+  "pass": true
+ }
+]

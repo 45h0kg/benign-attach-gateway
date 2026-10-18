@@ -56,11 +56,14 @@ sudo bash experiments/cli_smoke.sh
 ## 5. Content gate (TLS plaintext, no termination)
 
 ```bash
-sudo PYTHONPATH=. python3 experiments/tls_gate_demo.py     # -> results/RESULTS_TLSGATE.md
-# benign GET allowed end-to-end (cert verified); exfil POST denied on its plaintext, server receives nothing
+bash experiments/agents/build.sh                           # builds go_agent (Go 1.21+) and static_agent (gcc + libssl-dev static archives)
+sudo PYTHONPATH=. python3 experiments/tls_gate_demo.py all # -> results/RESULTS_TLSGATE.md, results/tls_gate_runtimes.json
+# for each of openssl / go / static: benign GET allowed end-to-end (cert verified); exfil POST denied on its
+# plaintext, server receives nothing. Pass a single runtime name instead of `all` to run one.
 ```
 
-Requires the uprobe PMU and OpenSSL 3 (`SSL_write`/`SSL_write_ex`). The demo uses TLS 1.2 so application-data
+Requires the uprobe PMU. The OpenSSL runtime probes `libssl.so.3`; the Go and static runtimes probe the agent
+binary itself (`crypto/tls.(*Conn).Write`, or `SSL_write` linked in), so those binaries must not be stripped. The demo uses TLS 1.2 so application-data
 records are cleanly distinguishable from the handshake; see `docs/TLS_GATE.md` for TLS 1.3.
 
 ## 6. Everything, logged

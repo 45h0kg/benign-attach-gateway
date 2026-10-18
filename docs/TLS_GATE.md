@@ -38,9 +38,33 @@ triggers on the uprobe write event (the application called `SSL_write`) rather t
 type; the enforcer still decrypts nothing. Both are described; the prototype implements the 1.2
 record-boundary path.
 
+## Runtime coverage
+The uprobe is placed at the write function of whichever TLS library the agent uses, in whichever
+ELF holds that code. Two kernel programs cover three runtime shapes (`bpf/ssl_sniff.bpf.c`):
+
+| Runtime | Symbol | Where the probe is placed | Registers read | Status |
+|---|---|---|---|---|
+| OpenSSL shared (Python, curl, Node, …) | `SSL_write`, `SSL_write_ex` | `libssl.so.3` | `rsi`=buf, `rdx`=len (SysV ABI) | demonstrated |
+| OpenSSL/BoringSSL statically linked | `SSL_write`, `SSL_write_ex` | the agent's own executable | same | demonstrated (static libssl build) |
+| Go `crypto/tls` | `crypto/tls.(*Conn).Write` | the Go binary (always static) | `rbx`=b.ptr, `rcx`=b.len (Go register ABI) | demonstrated |
+
+`escrow.tlsview.detect_runtime(exe)` picks the runtime from the agent's executable: Go if it
+carries the Go TLS symbol, static if it carries `SSL_write` itself, otherwise shared OpenSSL;
+`TlsPlaintextProbe.for_executable(obj, exe)` loads the matching program and symbol. The relay, the
+model and the gate are identical across runtimes -- only the probe placement differs.
+`experiments/tls_gate_demo.py all` runs the three agents (`experiments/agents/`) through the same
+gate; `results/tls_gate_runtimes.json` holds the logged run.
+
+Not yet covered: Rustls (`rustls::conn::ConnectionCommon::writer` is a different shape and needs its
+own probe), musl-linked OpenSSL variants with stripped symbols (no symbol → no offset; a stripped
+binary needs an offset supplied out of band), and a BoringSSL build we have not tested directly --
+the static-OpenSSL agent exercises the same mechanism (symbol inside the executable, SysV ABI) and
+BoringSSL keeps the `SSL_write(ssl, buf, num)` signature.
+
 ## Limitations
-- Per-library uprobes: OpenSSL is covered; Go `crypto/tls`, BoringSSL-static, musl and Rustls need
-  per-runtime uprobe targets (a real coverage gap).
-- Correlation in the prototype is by pid (one connection at a time per agent); production keys the
-  plaintext to the connection by (pid, fd/socket) so concurrent connections are disambiguated.
+- Correlation in the prototype is by writing task (`pid_tgid`); an agent that multiplexes several
+  TLS sessions on one thread (asyncio-style) needs the `SSL*` / `*tls.Conn` handle (first argument of
+  the write) as the key so concurrent sessions are disambiguated. The uprobe can read it; not wired.
+- The gate decides on the first application-data record only; later writes on a released
+  connection are not held, as with the connection gate.
 - The ML model is a deterministic logistic-regression placeholder; it is not the contribution.

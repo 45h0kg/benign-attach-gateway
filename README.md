@@ -132,7 +132,8 @@ proxy (which holds a key and breaks end-to-end), we read the plaintext at the ag
   **placeholder**) scores the request; `allow` releases it end-to-end, `deny` resets before the server sees it.
 
 ```bash
-sudo PYTHONPATH=. python3 experiments/tls_gate_demo.py
+bash experiments/agents/build.sh                            # Go + static-OpenSSL agents (needs go, gcc, libssl-dev)
+sudo PYTHONPATH=. python3 experiments/tls_gate_demo.py all   # openssl | go | static | all
 # benign  GET  /v1/items  -> cert OK, allowed end-to-end, server receives it
 # exfil   POST /transfer  -> denied on its plaintext (p=0.999), connection reset, server receives nothing
 ```
@@ -164,7 +165,8 @@ sudo PYTHONPATH=. python3 bench/bench.py 200
 sudo bash experiments/cli_smoke.sh
 
 # content gate: TLS plaintext via uprobe + ML, no termination
-sudo PYTHONPATH=. python3 experiments/tls_gate_demo.py
+bash experiments/agents/build.sh                            # Go + static-OpenSSL agents (needs go, gcc, libssl-dev)
+sudo PYTHONPATH=. python3 experiments/tls_gate_demo.py all   # openssl | go | static | all
 
 # everything, logged
 sudo bash experiments/run_all.sh        # -> results/execution_log.txt
@@ -207,7 +209,8 @@ All numbers come from logged runs (`results/`).
   its SPIFFE identity; the exfil destination receives nothing while the allowed service is reached; a raw socket
   that **bypasses a comparison sidecar proxy** is **held by escrow**; 6 pods × 100 connections (600) are all
   gated at ~59 conn/s. See `results/RESULTS_K8S.md`.
-- **Content gate:** an exfil POST is denied on its captured plaintext and never reaches the server, while a
+- **Content gate (OpenSSL shared, Go `crypto/tls`, static OpenSSL — same gate, three probe placements):** an
+  exfil POST is denied on its captured plaintext and never reaches the server, while a
   benign request completes on a certificate-verified end-to-end TLS connection; the enforcer holds no key. See
   `results/RESULTS_TLSGATE.md`.
 
@@ -233,7 +236,8 @@ tests/                     harness (real cgroups/sockets/uids) + 36-check advers
 bench/bench.py             latency breakdown, baseline, concurrency
 experiments/
   cli_smoke.sh             curl as the agent, end to end
-  tls_gate_demo.py         content gate: plaintext via uprobe + ML, no TLS termination
+  tls_gate_demo.py         content gate: plaintext via uprobe + ML, no TLS termination (3 runtimes)
+  agents/                  Go and statically-linked OpenSSL agent clients for the content gate
   run_all.sh               one-command reproduction (stages 0–6) -> results/execution_log.txt
   k8s/                     on-cluster drivers: build_image, drive, bypass, scale + manifests
 deploy/k8s/                verifier Deployment, node-agent DaemonSet, supervised pod, iptables sidecar variant
@@ -274,14 +278,16 @@ How each goal is met is spelled out in **[`docs/THREAT_MODEL.md`](docs/THREAT_MO
 
 - **Encrypted content vs. destination:** the connection gate decides on destination + identity (which encryption
   cannot hide) — it is **not** a content/DLP tool by itself. The content gate adds content inspection for
-  OpenSSL-based TLS **without** terminating; Go’s `crypto/tls`, statically linked BoringSSL, musl and Rustls
-  need per-runtime uprobe targets (a real coverage gap).
+  TLS **without** terminating, for three runtime shapes: shared OpenSSL (`SSL_write`/`SSL_write_ex` in
+  `libssl.so`), statically linked OpenSSL/BoringSSL (the same symbols inside the agent binary) and Go
+  `crypto/tls` (`crypto/tls.(*Conn).Write`, Go register ABI). Rustls and stripped binaries are not yet covered.
 - **IPv4 only** for now; IPv6 needs the `connect6`/`sendmsg6` hooks. UDP is *pinned* (DNS to the cluster
   resolver), not escrowed for a verdict.
 - The prototype interceptor is a single Python process; the content model is a deterministic placeholder; both
   are replaceable and are not the contribution.
-- The content gate correlates plaintext to a connection by pid in the prototype (one connection at a time);
-  production keys it by (pid, fd/socket).
+- The content gate correlates plaintext to a connection by writing task (`pid_tgid`) and decides on the first
+  application record only; an agent multiplexing TLS sessions on one thread needs the `SSL*`/`*tls.Conn` handle
+  as the key (readable by the uprobe, not wired).
 - Fully-managed node tiers (GKE Autopilot, AKS virtual nodes) are unsupported by design (no node access).
 
 ---
@@ -294,8 +300,8 @@ How each goal is met is spelled out in **[`docs/THREAT_MODEL.md`](docs/THREAT_MO
   attestation, so a relying party verifies both the decision and that the approved enforcement was in force.
 - Compiled interceptor + persistent verifier connection (removes most per-connection latency); multi-worker
   `SO_REUSEPORT` scale-out; multi-node cluster run.
-- Content gate: TLS 1.3 record handling via the uprobe-trigger path; Go/BoringSSL/Rustls uprobe targets; a real
-  content model keyed on identity.
+- Content gate: TLS 1.3 record handling via the uprobe-trigger path; Rustls probe target; handle-keyed
+  correlation; a real content model keyed on identity.
 
 ---
 

@@ -77,6 +77,6 @@ The adversarial suite (`tests/test_escrow.py`) exercises each goal; the check ID
 - **Data-only reuse** of an already-released connection is out of scope: escrow controls the opening of a
   connection and (with the content gate) its first application record, not the full stream.
 - **Encrypted content to an allowed destination:** the connection gate decides on destination + identity; the
-  content gate adds content inspection for OpenSSL TLS without terminating, but Go/BoringSSL/Rustls need
-  per-runtime uprobe targets, and a covert channel inside otherwise-allowed traffic is not addressed by the
+  content gate adds content inspection without terminating for shared OpenSSL, static OpenSSL/BoringSSL and Go
+  `crypto/tls`; Rustls and stripped binaries need their own probe targets, and a covert channel inside otherwise-allowed traffic is not addressed by the
   connection gate alone.

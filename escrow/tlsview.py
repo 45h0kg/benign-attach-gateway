@@ -1,8 +1,15 @@
 """TLS-plaintext view: read the plaintext an agent writes, without terminating TLS.
 
-An eBPF uprobe on the agent's TLS library (`SSL_write` / `SSL_write_ex` in OpenSSL)
-captures the plaintext buffer at the library boundary -- before it is encrypted --
-into a kernel map keyed by pid_tgid. The TLS connection itself is untouched: it still
+An eBPF uprobe on the agent's TLS library captures the plaintext buffer at the library
+boundary -- before it is encrypted -- into a kernel map keyed by pid_tgid. Three runtimes
+are covered by two kernel programs:
+
+  * OpenSSL shared library  -> `SSL_write` / `SSL_write_ex` in libssl.so       (RUNTIME_OPENSSL)
+  * OpenSSL/BoringSSL static -> the same symbols inside the agent's own binary  (RUNTIME_STATIC)
+  * Go crypto/tls            -> `crypto/tls.(*Conn).Write` in the Go binary    (RUNTIME_GO)
+
+The TLS connection itself is untouched: it still completes end-to-end to the real destination
+with the real certificate; the enforcer never holds a key and never decrypts the wire. The TLS connection itself is untouched: it still
 completes end-to-end to the real destination with the real certificate; the enforcer
 never holds a key and never decrypts the wire.
 
@@ -34,6 +41,28 @@ VSZ = 16 + MAXDATA
 # OpenSSL 3 write functions; arg layout is (ssl, buf=rsi, num=rdx[, *written]) for both.
 DEFAULT_LIB = "/usr/lib/x86_64-linux-gnu/libssl.so.3"
 WRITE_SYMS = ("SSL_write", "SSL_write_ex")
+# Go crypto/tls: func (c *Conn) Write(b []byte); register ABI b.ptr=rbx, b.len=rcx.
+GO_WRITE_SYMS = ("crypto/tls.(*Conn).Write",)
+
+# runtime name -> (bpf program section, default symbols). The ELF that holds the symbol is
+# libssl.so for OPENSSL and the agent's own executable for STATIC and GO.
+RUNTIME_OPENSSL, RUNTIME_STATIC, RUNTIME_GO = "openssl", "static", "go"
+RUNTIMES = {
+    RUNTIME_OPENSSL: ("uprobe/SSL_write", WRITE_SYMS),
+    RUNTIME_STATIC: ("uprobe/SSL_write", WRITE_SYMS),
+    RUNTIME_GO: ("uprobe/go_tls_write", GO_WRITE_SYMS),
+}
+
+
+def detect_runtime(exe: str) -> str:
+    """Pick the runtime from the agent's executable: Go if it carries the Go TLS symbol,
+    static if it carries SSL_write itself, otherwise assume shared OpenSSL."""
+    offs = symbol_file_offsets(exe, GO_WRITE_SYMS + WRITE_SYMS)
+    if GO_WRITE_SYMS[0] in offs:
+        return RUNTIME_GO
+    if "SSL_write" in offs:
+        return RUNTIME_STATIC
+    return RUNTIME_OPENSSL
 
 
 def _uprobe_pmu_type() -> int:
@@ -62,11 +91,20 @@ def symbol_file_offsets(lib: str, names) -> dict:
 
 
 class TlsPlaintextProbe:
-    """Loads the SSL_write(_ex) uprobe and reads captured plaintext from the kernel map."""
+    """Loads the write-side uprobe for one TLS runtime and reads captured plaintext.
 
-    def __init__(self, obj_path: str, lib: str = DEFAULT_LIB, syms=WRITE_SYMS):
+    `lib` is the ELF that holds the write function: libssl.so for shared OpenSSL, or the
+    agent's own executable for a static OpenSSL/BoringSSL build or a Go binary.
+    """
+
+    def __init__(self, obj_path: str, lib: str = DEFAULT_LIB, syms=None, runtime: str = RUNTIME_OPENSSL):
+        section, default_syms = RUNTIMES[runtime]
+        self.runtime = runtime
+        self.section = section
         self.lib = lib.encode() + b"\x00"
-        self.offsets = symbol_file_offsets(lib, syms)
+        self.offsets = symbol_file_offsets(lib, syms or default_syms)
+        if not self.offsets:
+            raise LookupError(f"no TLS write symbol for runtime {runtime!r} in {lib}")
         self.prog, self.maps = self._load(obj_path)
         self.writes = self.maps["writes"]
         self.perf_fds: list[int] = []
@@ -83,9 +121,9 @@ class TlsPlaintextProbe:
                 if sym["st_shndx"] == elf.get_section_index("maps"):
                     t, ks, vs, me, fl = struct.unpack("=IIIII", data[sym["st_value"]:sym["st_value"] + 20])
                     fds[sym.name] = (_bpf(BPF_MAP_CREATE, struct.pack("=IIIII", t, ks, vs, me, fl)), sym["st_value"])
-            sec = elf.get_section_by_name("uprobe/SSL_write")
+            sec = elf.get_section_by_name(self.section)
             insns = bytearray(sec.data())
-            rel = elf.get_section_by_name(".reluprobe/SSL_write")
+            rel = elf.get_section_by_name(".rel" + self.section)
             if rel:
                 for r in rel.iter_relocations():
                     s = symtab.get_symbol(r["r_info_sym"])
@@ -104,6 +142,12 @@ class TlsPlaintextProbe:
             except OSError as e:
                 raise OSError(e.errno, f"{e.strerror}; verifier log:\n{log.value.decode(errors='replace')}")
             return prog, {k: v[0] for k, v in fds.items()}
+
+    @classmethod
+    def for_executable(cls, obj_path: str, exe: str, libssl: str = DEFAULT_LIB):
+        """Probe the right runtime for an agent executable (Go / static / shared OpenSSL)."""
+        rt = detect_runtime(exe)
+        return cls(obj_path, lib=exe if rt != RUNTIME_OPENSSL else libssl, runtime=rt)
 
     def _perf_attr(self, offset: int):
         a = bytearray(128)

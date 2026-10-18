@@ -21,3 +21,27 @@ yet both connections used real end-to-end TLS (the agent verified the server's c
 ```
 
 The agent's TLS cert validation succeeded (`cert OK`), proving the real server's certificate reached it end-to-end through a relay that holds no key; the exfil request was denied on its captured plaintext and never reached the server.
+
+## Three TLS runtimes through the same gate
+
+One logged run of `experiments/tls_gate_demo.py all` (`results/tls_gate_runtimes.json`). The relay, model and gate are the same; only the uprobe placement differs.
+
+| Runtime | Probe placed in | Symbol(s) | Benign GET | Exfil POST | Server received |
+|---|---|---|---|---|---|
+| openssl | `libssl.so.3` | `SSL_write`, `SSL_write_ex` | allow p=0.001 | deny p=0.999 | `/v1/items` |
+| go | `go_agent` | `crypto/tls.(*Conn).Write` | allow p=0.001 | deny p=0.999 | `/v1/items` |
+| static | `static_agent` | `SSL_write`, `SSL_write_ex` | allow p=0.001 | deny p=0.999 | `/v1/items` |
+
+All three: the agent verified the real server certificate (end-to-end TLS, no key at the relay), the benign request completed, the exfiltration request was denied on its captured plaintext and the server received nothing of it.
+
+```
+=== runtime openssl: probe in libssl.so.3 on SSL_write, SSL_write_ex
+  AGENT request /v1/items        -> cert OK, server replied b'HTTP/1.0 200 OK'
+  AGENT request /transfer        -> BLOCKED (ConnectionResetError: [Errno 104] Connection reset by peer)
+=== runtime go: probe in go_agent on crypto/tls.(*Conn).Write
+  AGENT(go) request /v1/items        -> cert OK, server replied "HTTP/1.0 200 OK"
+  AGENT(go) request /transfer        -> BLOCKED (read tcp 127.0.0.1:37098->127.0.0.1:33725: read: connection reset by peer)
+=== runtime static: probe in static_agent on SSL_write, SSL_write_ex
+  AGENT(static) request /v1/items        -> cert OK, server replied 'HTTP/1.0 200 OK'
+  AGENT(static) request /transfer        -> BLOCKED (reset)
+```

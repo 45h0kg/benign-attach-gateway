@@ -20,7 +20,13 @@ TLS 1.2 is used so application-data records (type 0x17) are cleanly distinguisha
 handshake on the wire; TLS 1.3 hides the inner type, and is handled by triggering on the uprobe
 write instead of record type (see docs/TLS_GATE.md). The relay decrypts nothing either way.
 
-Run: sudo PYTHONPATH=. python3 experiments/tls_gate_demo.py
+Three TLS runtimes are gated by the same relay and the same model, differing only in where
+the uprobe is placed:
+  openssl : Python/ssl agent, SSL_write_ex in the shared libssl.so.3
+  go      : Go agent, crypto/tls.(*Conn).Write inside the Go binary (build with experiments/agents/build.sh)
+  static  : C agent statically linked against libssl (SSL_write inside the executable; the BoringSSL shape)
+
+Run: sudo PYTHONPATH=. python3 experiments/tls_gate_demo.py [openssl|go|static|all]
 """
 from __future__ import annotations
 import os
@@ -36,14 +42,15 @@ import time
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 from escrow.mlcheck import ContentCheck            # noqa: E402
-from escrow.tlsview import TlsPlaintextProbe        # noqa: E402
+from escrow.tlsview import TlsPlaintextProbe, RUNTIME_OPENSSL, RUNTIME_GO, RUNTIME_STATIC  # noqa: E402
 
 TLS_HANDSHAKE, TLS_CCS, TLS_ALERT, TLS_APPDATA = 0x16, 0x14, 0x15, 0x17
 
 
 def make_cert(d):
     subprocess.run(["openssl", "req", "-x509", "-newkey", "rsa:2048", "-keyout", f"{d}/key.pem",
-                    "-out", f"{d}/cert.pem", "-days", "1", "-nodes", "-subj", "/CN=localhost"],
+                    "-out", f"{d}/cert.pem", "-days", "1", "-nodes", "-subj", "/CN=localhost",
+                    "-addext", "subjectAltName=DNS:localhost"],
                    check=True, capture_output=True)
 
 
@@ -176,27 +183,40 @@ for r in reqs:
 '''
 
 
-def main():
+AGENTS_DIR = os.path.join(ROOT, "experiments", "agents")
+
+
+def agent_command(runtime, relay_port, cafile):
+    """Command line for the agent of a runtime, and the executable the uprobe is placed in."""
+    if runtime == RUNTIME_OPENSSL:
+        return [sys.executable, "-c", CLIENT_SRC, str(relay_port), cafile, "2.0"], None
+    exe = os.path.join(AGENTS_DIR, "go_agent" if runtime == RUNTIME_GO else "static_agent")
+    if not os.path.exists(exe):
+        raise SystemExit(f"{exe} missing: run bash experiments/agents/build.sh")
+    return [exe, str(relay_port), cafile, "2.0"], exe
+
+
+def run(runtime):
     d = tempfile.mkdtemp(prefix="tlsgate-")
     make_cert(d)
-    # pick a free port for the server
     _p = socket.socket(); _p.bind(("127.0.0.1", 0)); base = _p.getsockname()[1]; _p.close()
     logfile = f"{d}/received.jsonl"
     srv = subprocess.Popen([sys.executable, "-c", SERVER_SRC, str(base), f"{d}/cert.pem", f"{d}/key.pem", logfile],
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(1.5)
-    probe = TlsPlaintextProbe(os.path.join(ROOT, "bpf", "ssl_sniff.bpf.o"))
     ml = ContentCheck(threshold=0.5)
-    # relay listener
     lst = socket.socket(); lst.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     lst.bind(("127.0.0.1", 0)); lst.listen(8); relay_port = lst.getsockname()[1]
 
+    cmd, exe = agent_command(runtime, relay_port, f"{d}/cert.pem")
+    obj = os.path.join(ROOT, "bpf", "ssl_sniff.bpf.o")
+    probe = TlsPlaintextProbe(obj, runtime=runtime) if exe is None else TlsPlaintextProbe(obj, lib=exe, runtime=runtime)
     # start the agent (delayed) and attach the uprobe to its pid only
-    client = subprocess.Popen([sys.executable, "-c", CLIENT_SRC, str(relay_port), f"{d}/cert.pem", "2.0"],
-                              stdout=subprocess.PIPE, text=True)
+    client = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True)
     nf = probe.attach(client.pid)
-    print(f"uprobe on agent pid={client.pid}: {nf} function(s); relay :{relay_port} -> server :{base}")
-    print("TLS is end-to-end to the real server; the relay and the probe hold NO key.\n")
+    where = "libssl.so.3" if exe is None else os.path.basename(exe)
+    print(f"=== runtime {runtime}: uprobe on {', '.join(probe.offsets)} in {where}, agent pid={client.pid} ({nf} probe(s)); relay :{relay_port} -> server :{base}")
+    print("    TLS is end-to-end to the real server; the relay and the probe hold NO key.")
 
     log = []
     lst.settimeout(12)
@@ -209,20 +229,37 @@ def main():
         relay_once(c, ("127.0.0.1", base), client.pid, probe, ml, log)
         handled += 1
 
-    print(client.communicate()[0].strip())
+    agent_out = client.communicate()[0].strip()
     time.sleep(0.5)
     received = server_received(logfile)
-    print("\n--- content gate decisions (on plaintext captured from inside TLS) ---")
+    print("    agent saw:")
+    for line in agent_out.splitlines():
+        print("      " + line)
+    print("    content gate decisions (on plaintext captured from inside TLS):")
     for e in log:
-        print(f"  {e['verdict'].upper():5} p={e['p']}  {e['request']}   reasons={e.get('reasons')}")
-    print("\n--- what the REAL server actually received ---")
+        print(f"      {e['verdict'].upper():5} p={e['p']}  {e['request']}   reasons={e.get('reasons')}")
+    print("    what the REAL server actually received:")
     if not received:
-        print("  (nothing)")
+        print("      (nothing)")
     for r in received:
-        print(f"  {r['path']}  body={r['body']!r}")
-    print("\nResult: the exfil POST was denied on its plaintext content and never reached the server,")
-    print("yet both connections used real end-to-end TLS (the agent verified the server's cert).")
-    probe.close(); srv.terminate(); import shutil; shutil.rmtree(d, ignore_errors=True)
+        print(f"      {r['path']}  body={r['body']!r}")
+    ok = (len(log) == 2 and log[0]["verdict"] == "allow" and log[1]["verdict"] == "deny"
+          and len(received) == 1 and received[0]["path"] == "/v1/items")
+    print(f"    RESULT {runtime}: {'PASS' if ok else 'FAIL'} -- benign allowed end-to-end, exfil denied on plaintext, server received only the benign request\n")
+    probe.close(); srv.terminate(); lst.close(); import shutil; shutil.rmtree(d, ignore_errors=True)
+    return {"runtime": runtime, "probe_in": where, "symbols": list(probe.offsets), "decisions": log,
+            "server_received": received, "agent": agent_out.splitlines(), "pass": ok}
+
+
+def main():
+    which = sys.argv[1] if len(sys.argv) > 1 else "all"
+    runtimes = [RUNTIME_OPENSSL, RUNTIME_GO, RUNTIME_STATIC] if which == "all" else [which]
+    results = [run(rt) for rt in runtimes]
+    import json
+    out = os.path.join(ROOT, "results", "tls_gate_runtimes.json")
+    with open(out, "w") as f:
+        json.dump(results, f, indent=1)
+    print(f"{sum(r['pass'] for r in results)}/{len(results)} runtimes pass; written {out}")
 
 
 if __name__ == "__main__":
