@@ -51,6 +51,15 @@ Related earlier work: [zk-proof-gateway](https://github.com/45h0kg/zk-proof-gate
 ## License
 MIT
 
+## Content gate: see TLS plaintext without terminating (new)
+`escrow/tlsview.py` + `bpf/ssl_sniff.bpf.c` attach an eBPF uprobe to the agent's TLS library
+(`SSL_write`/`SSL_write_ex`) and read the plaintext at the library boundary -- the connection stays
+end-to-end to the real server with the real certificate, and the enforcer holds no key. A small ML
+content model (`escrow/mlcheck.py`, placeholder) scores the request and the connection is gated on
+it. Demo: `sudo PYTHONPATH=. python3 experiments/tls_gate_demo.py` -- a benign request is allowed
+end-to-end and an exfil request is denied before it reaches the server (`docs/TLS_GATE.md`,
+`results/RESULTS_TLSGATE.md`).
+
 ## On a Kubernetes cluster
 `deploy/k8s/` holds the DaemonSet (node agent: interceptor + eBPF) and the verifier Deployment.
 `experiments/k8s/` reproduces the on-cluster results against real pods (see `results/RESULTS_K8S.md`):
