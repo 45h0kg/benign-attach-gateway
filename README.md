@@ -20,7 +20,6 @@ Reference implementation for the preprint *“Connection Escrow: Holding AI-Agen
 - [Limitations](#limitations)
 - [Roadmap](#roadmap)
 - [Documentation](#documentation)
-- [Citing / related work](#citing--related-work)
 - [License](#license)
 
 ---
@@ -317,5 +316,4 @@ How each goal is met is spelled out in **[`docs/THREAT_MODEL.md`](docs/THREAT_MO
 
 ## License
 
-MIT (see `LICENSE`). Note: MIT grants no express patent licence; choose deliberately before relying on it for
-patent strategy.
+MIT (see `LICENSE`).
