@@ -31,7 +31,7 @@ clang -O2 -target bpf -I/usr/include/x86_64-linux-gnu -c bpf/ssl_sniff.bpf.c    
 
 ```bash
 sudo PYTHONPATH=. python3 tests/test_escrow.py both
-# expect: 36/36 on the eBPF hold point, 33/33 on iptables
+# expect: 36/36 on the eBPF hold point, 34/34 on iptables (33 applicable + one not-applicable marker for UDP pinning)
 ```
 
 The harness creates one cgroup per pod, runs each agent as a separate uid-separated process inside it, and uses

@@ -56,7 +56,7 @@ verifier’s own — are never rewritten, so there is no redirection loop.
 
 - **`escrow_connect4`** (`cgroup/connect4`): runs inside `connect(2)`. For TCP it reads the socket cookie
   (`bpf_get_socket_cookie`), stores `{original dst, cgroup id, pid}` keyed by the cookie in `escrow_map`
-  (LRU hash), and rewrites `user_ip4`/`user_port` to the interceptor. ~45 instructions, no loops.
+  (LRU hash), and rewrites `user_ip4`/`user_port` to the interceptor. 98 instructions including the UDP rule and counters, no backward jumps, no loops.
 - **`escrow_sendmsg4`** (`cgroup/sendmsg4`): applies the UDP rule to unconnected datagrams — allow the
   configured resolver, deny the rest (`EPERM`).
 - **`escrow_sockops`** (`sockops`, on `ACTIVE_ESTABLISHED`): writes `{local addr, local port}→cookie` into

@@ -3,180 +3,180 @@
   "mode": "bpf",
   "baseline_agent_total": {
    "n": 200,
-   "median_us": 888,
-   "p95_us": 1157,
-   "mean_us": 923
+   "median_us": 825,
+   "p95_us": 1172,
+   "mean_us": 884
   },
   "sequential": {
    "agent_total": {
     "n": 200,
-    "median_us": 6054,
-    "p95_us": 7948,
-    "mean_us": 6168
+    "median_us": 5806,
+    "p95_us": 8589,
+    "mean_us": 6112
    },
    "agent_connect": {
     "n": 200,
-    "median_us": 134,
-    "p95_us": 196,
-    "mean_us": 142
+    "median_us": 133,
+    "p95_us": 211,
+    "mean_us": 172
    },
    "attribution": {
     "n": 200,
-    "median_us": 988,
-    "p95_us": 1305,
-    "mean_us": 1019
+    "median_us": 900,
+    "p95_us": 1363,
+    "mean_us": 968
    },
    "peek": {
     "n": 200,
-    "median_us": 95,
-    "p95_us": 161,
-    "mean_us": 106
+    "median_us": 93,
+    "p95_us": 132,
+    "mean_us": 99
    },
    "verdict_rtt": {
     "n": 200,
-    "median_us": 2407,
-    "p95_us": 3518,
-    "mean_us": 2554
+    "median_us": 2383,
+    "p95_us": 3660,
+    "mean_us": 2555
    },
    "gate": {
     "n": 200,
-    "median_us": 329,
-    "p95_us": 576,
-    "mean_us": 365
+    "median_us": 328,
+    "p95_us": 501,
+    "mean_us": 345
    },
    "upstream_connect": {
     "n": 200,
-    "median_us": 420,
-    "p95_us": 679,
-    "mean_us": 449
+    "median_us": 411,
+    "p95_us": 646,
+    "mean_us": 461
    },
    "hold_total": {
     "n": 200,
-    "median_us": 4711,
-    "p95_us": 6170,
-    "mean_us": 4817
+    "median_us": 4522,
+    "p95_us": 6698,
+    "mean_us": 4747
    },
    "verifier_decide": {
     "n": 200,
-    "median_us": 23,
-    "p95_us": 48,
+    "median_us": 24,
+    "p95_us": 36,
     "mean_us": 26
    }
   },
   "concurrent16": {
    "agent_total": {
     "n": 192,
-    "median_us": 70593,
-    "p95_us": 94790,
-    "mean_us": 87006
+    "median_us": 63108,
+    "p95_us": 77012,
+    "mean_us": 63259
    },
    "gate": {
     "n": 192,
-    "median_us": 300,
-    "p95_us": 776,
-    "mean_us": 368
+    "median_us": 260,
+    "p95_us": 555,
+    "mean_us": 313
    },
    "hold_total": {
     "n": 192,
-    "median_us": 43093,
-    "p95_us": 65380,
-    "mean_us": 63749
+    "median_us": 41972,
+    "p95_us": 51813,
+    "mean_us": 41584
    },
    "released": 192,
-   "wall_s": 2.03,
-   "conn_per_s": 94.6
+   "wall_s": 1.09,
+   "conn_per_s": 175.5
   },
   "ed25519_native": true,
-  "process_count": 68
+  "process_count": 71
  },
  "iptables": {
   "mode": "iptables",
   "baseline_agent_total": {
    "n": 200,
-   "median_us": 860,
-   "p95_us": 1198,
-   "mean_us": 911
+   "median_us": 882,
+   "p95_us": 1536,
+   "mean_us": 1013
   },
   "sequential": {
    "agent_total": {
     "n": 200,
-    "median_us": 6719,
-    "p95_us": 8763,
-    "mean_us": 6889
+    "median_us": 6699,
+    "p95_us": 9628,
+    "mean_us": 7046
    },
    "agent_connect": {
     "n": 200,
-    "median_us": 147,
-    "p95_us": 216,
-    "mean_us": 155
+    "median_us": 140,
+    "p95_us": 228,
+    "mean_us": 206
    },
    "attribution": {
     "n": 200,
-    "median_us": 1811,
-    "p95_us": 2585,
-    "mean_us": 1935
+    "median_us": 1855,
+    "p95_us": 2628,
+    "mean_us": 1968
    },
    "peek": {
     "n": 200,
-    "median_us": 93,
-    "p95_us": 147,
-    "mean_us": 100
+    "median_us": 90,
+    "p95_us": 151,
+    "mean_us": 99
    },
    "verdict_rtt": {
     "n": 200,
-    "median_us": 2334,
-    "p95_us": 3176,
-    "mean_us": 2461
+    "median_us": 2297,
+    "p95_us": 4047,
+    "mean_us": 2555
    },
    "gate": {
     "n": 200,
-    "median_us": 328,
-    "p95_us": 531,
-    "mean_us": 351
+    "median_us": 337,
+    "p95_us": 471,
+    "mean_us": 347
    },
    "upstream_connect": {
     "n": 200,
-    "median_us": 427,
-    "p95_us": 651,
-    "mean_us": 452
+    "median_us": 417,
+    "p95_us": 613,
+    "mean_us": 433
    },
    "hold_total": {
     "n": 200,
     "median_us": 5460,
-    "p95_us": 7019,
-    "mean_us": 5599
+    "p95_us": 8025,
+    "mean_us": 5699
    },
    "verifier_decide": {
     "n": 200,
     "median_us": 24,
-    "p95_us": 47,
-    "mean_us": 27
+    "p95_us": 56,
+    "mean_us": 28
    }
   },
   "concurrent16": {
    "agent_total": {
     "n": 192,
-    "median_us": 97818,
-    "p95_us": 155296,
-    "mean_us": 100938
+    "median_us": 107336,
+    "p95_us": 156641,
+    "mean_us": 123854
    },
    "gate": {
     "n": 192,
-    "median_us": 261,
-    "p95_us": 1032,
-    "mean_us": 385
+    "median_us": 320,
+    "p95_us": 1258,
+    "mean_us": 491
    },
    "hold_total": {
     "n": 192,
-    "median_us": 70960,
-    "p95_us": 126242,
-    "mean_us": 74806
+    "median_us": 76564,
+    "p95_us": 126788,
+    "mean_us": 93567
    },
    "released": 192,
-   "wall_s": 1.55,
-   "conn_per_s": 123.7
+   "wall_s": 2.64,
+   "conn_per_s": 72.7
   },
   "ed25519_native": true,
-  "process_count": 68
+  "process_count": 72
  }
 }

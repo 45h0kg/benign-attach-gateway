@@ -3,180 +3,180 @@
   "mode": "bpf",
   "baseline_agent_total": {
    "n": 200,
-   "median_us": 830,
-   "p95_us": 1273,
-   "mean_us": 928
+   "median_us": 834,
+   "p95_us": 1264,
+   "mean_us": 1045
   },
   "sequential": {
    "agent_total": {
     "n": 200,
-    "median_us": 10068,
-    "p95_us": 13594,
-    "mean_us": 10665
+    "median_us": 10130,
+    "p95_us": 13955,
+    "mean_us": 10777
    },
    "agent_connect": {
     "n": 200,
-    "median_us": 131,
-    "p95_us": 193,
-    "mean_us": 146
+    "median_us": 133,
+    "p95_us": 204,
+    "mean_us": 144
    },
    "attribution": {
     "n": 200,
-    "median_us": 914,
-    "p95_us": 1188,
-    "mean_us": 955
+    "median_us": 854,
+    "p95_us": 1174,
+    "mean_us": 904
    },
    "peek": {
     "n": 200,
-    "median_us": 91,
-    "p95_us": 137,
-    "mean_us": 96
+    "median_us": 88,
+    "p95_us": 146,
+    "mean_us": 99
    },
    "verdict_rtt": {
     "n": 200,
-    "median_us": 3697,
-    "p95_us": 5476,
-    "mean_us": 3994
+    "median_us": 3757,
+    "p95_us": 5438,
+    "mean_us": 4032
    },
    "gate": {
     "n": 200,
-    "median_us": 3130,
-    "p95_us": 4947,
-    "mean_us": 3448
+    "median_us": 3155,
+    "p95_us": 5026,
+    "mean_us": 3516
    },
    "upstream_connect": {
     "n": 200,
-    "median_us": 573,
-    "p95_us": 892,
-    "mean_us": 596
+    "median_us": 583,
+    "p95_us": 858,
+    "mean_us": 607
    },
    "hold_total": {
     "n": 200,
-    "median_us": 8866,
-    "p95_us": 12184,
-    "mean_us": 9398
+    "median_us": 8835,
+    "p95_us": 12328,
+    "mean_us": 9463
    },
    "verifier_decide": {
     "n": 200,
-    "median_us": 19,
-    "p95_us": 26,
-    "mean_us": 19
-   }
-  },
-  "concurrent16": {
-   "agent_total": {
-    "n": 192,
-    "median_us": 158286,
-    "p95_us": 187288,
-    "mean_us": 156193
-   },
-   "gate": {
-    "n": 192,
-    "median_us": 3241,
-    "p95_us": 5307,
-    "mean_us": 3684
-   },
-   "hold_total": {
-    "n": 192,
-    "median_us": 104899,
-    "p95_us": 125832,
-    "mean_us": 104117
-   },
-   "released": 192,
-   "wall_s": 2.23,
-   "conn_per_s": 86.2
-  },
-  "ed25519_native": false,
-  "process_count": 67
- },
- "iptables": {
-  "mode": "iptables",
-  "baseline_agent_total": {
-   "n": 200,
-   "median_us": 900,
-   "p95_us": 1199,
-   "mean_us": 951
-  },
-  "sequential": {
-   "agent_total": {
-    "n": 200,
-    "median_us": 11842,
-    "p95_us": 15847,
-    "mean_us": 12401
-   },
-   "agent_connect": {
-    "n": 200,
-    "median_us": 151,
-    "p95_us": 227,
-    "mean_us": 163
-   },
-   "attribution": {
-    "n": 200,
-    "median_us": 1839,
-    "p95_us": 2624,
-    "mean_us": 1985
-   },
-   "peek": {
-    "n": 200,
-    "median_us": 98,
-    "p95_us": 162,
-    "mean_us": 106
-   },
-   "verdict_rtt": {
-    "n": 200,
-    "median_us": 3995,
-    "p95_us": 5730,
-    "mean_us": 4299
-   },
-   "gate": {
-    "n": 200,
-    "median_us": 3246,
-    "p95_us": 5287,
-    "mean_us": 3649
-   },
-   "upstream_connect": {
-    "n": 200,
-    "median_us": 645,
-    "p95_us": 949,
-    "mean_us": 664
-   },
-   "hold_total": {
-    "n": 200,
-    "median_us": 10543,
-    "p95_us": 14143,
-    "mean_us": 11014
-   },
-   "verifier_decide": {
-    "n": 200,
-    "median_us": 23,
-    "p95_us": 33,
+    "median_us": 22,
+    "p95_us": 44,
     "mean_us": 25
    }
   },
   "concurrent16": {
    "agent_total": {
     "n": 192,
-    "median_us": 187445,
-    "p95_us": 320720,
-    "mean_us": 203417
+    "median_us": 142670,
+    "p95_us": 167250,
+    "mean_us": 144576
    },
    "gate": {
     "n": 192,
-    "median_us": 3376,
-    "p95_us": 6304,
-    "mean_us": 3885
+    "median_us": 3073,
+    "p95_us": 5250,
+    "mean_us": 3424
    },
    "hold_total": {
     "n": 192,
-    "median_us": 134878,
-    "p95_us": 273501,
-    "mean_us": 157375
+    "median_us": 88966,
+    "p95_us": 115954,
+    "mean_us": 91808
    },
    "released": 192,
-   "wall_s": 2.95,
-   "conn_per_s": 65.0
+   "wall_s": 2.06,
+   "conn_per_s": 93.3
   },
   "ed25519_native": false,
-  "process_count": 68
+  "process_count": 72
+ },
+ "iptables": {
+  "mode": "iptables",
+  "baseline_agent_total": {
+   "n": 200,
+   "median_us": 830,
+   "p95_us": 1221,
+   "mean_us": 941
+  },
+  "sequential": {
+   "agent_total": {
+    "n": 200,
+    "median_us": 11082,
+    "p95_us": 14956,
+    "mean_us": 11785
+   },
+   "agent_connect": {
+    "n": 200,
+    "median_us": 145,
+    "p95_us": 214,
+    "mean_us": 157
+   },
+   "attribution": {
+    "n": 200,
+    "median_us": 1823,
+    "p95_us": 2576,
+    "mean_us": 1931
+   },
+   "peek": {
+    "n": 200,
+    "median_us": 91,
+    "p95_us": 142,
+    "mean_us": 99
+   },
+   "verdict_rtt": {
+    "n": 200,
+    "median_us": 3714,
+    "p95_us": 5125,
+    "mean_us": 3938
+   },
+   "gate": {
+    "n": 200,
+    "median_us": 3126,
+    "p95_us": 5009,
+    "mean_us": 3545
+   },
+   "upstream_connect": {
+    "n": 200,
+    "median_us": 591,
+    "p95_us": 842,
+    "mean_us": 608
+   },
+   "hold_total": {
+    "n": 200,
+    "median_us": 9785,
+    "p95_us": 13276,
+    "mean_us": 10428
+   },
+   "verifier_decide": {
+    "n": 200,
+    "median_us": 23,
+    "p95_us": 37,
+    "mean_us": 25
+   }
+  },
+  "concurrent16": {
+   "agent_total": {
+    "n": 192,
+    "median_us": 160321,
+    "p95_us": 267480,
+    "mean_us": 172921
+   },
+   "gate": {
+    "n": 192,
+    "median_us": 3071,
+    "p95_us": 5135,
+    "mean_us": 3297
+   },
+   "hold_total": {
+    "n": 192,
+    "median_us": 121307,
+    "p95_us": 221820,
+    "mean_us": 134018
+   },
+   "released": 192,
+   "wall_s": 2.54,
+   "conn_per_s": 75.7
+  },
+  "ed25519_native": false,
+  "process_count": 72
  }
 }

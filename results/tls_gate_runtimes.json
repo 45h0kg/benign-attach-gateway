@@ -74,7 +74,7 @@
   ],
   "agent": [
    "AGENT(go) request /v1/items        -> cert OK, server replied \"HTTP/1.0 200 OK\"",
-   "AGENT(go) request /transfer        -> BLOCKED (read tcp 127.0.0.1:37098->127.0.0.1:33725: read: connection reset by peer)"
+   "AGENT(go) request /transfer        -> BLOCKED (read tcp 127.0.0.1:47824->127.0.0.1:46031: read: connection reset by peer)"
   ],
   "pass": true
  },

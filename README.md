@@ -201,9 +201,9 @@ sockets, and uid-separated agent processes**. Highlights:
 
 All numbers come from logged runs (`results/`).
 
-- **Correctness:** 36/36 (eBPF) and 33/33 (iptables) adversarial checks pass on Linux 6.18.
-- **Latency (loopback microbenchmark):** ~4.7 ms median hold per released connection (6.2 ms p95) on the eBPF
-  path; **23 µs** of that is policy evaluation — the rest is attribution, one HTTP round trip and two signatures.
+- **Correctness:** 36/36 (eBPF) adversarial checks pass on Linux 6.18; 33 of them apply on iptables and pass (the UDP-pinning checks need the kernel path).
+- **Latency (loopback microbenchmark):** ~4.5 ms median hold per released connection (6.7 ms p95) on the eBPF
+  path; **24 µs** of that is policy evaluation — the rest is attribution, one HTTP round trip and two signatures.
   See `results/RESULTS.md`.
 - **Kubernetes (single-node k3s v1.34.1):** an unmodified agent pod is gated per connection and attributed to
   its SPIFFE identity; the exfil destination receives nothing while the allowed service is reached; a raw socket
