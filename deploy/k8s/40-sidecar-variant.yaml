@@ -1,0 +1,36 @@
+# Alternative without eBPF: per-pod iptables hold point. An init container
+# (NET_ADMIN) redirects every TCP connect from the agent's uid to a sidecar
+# interceptor in the same pod; the sidecar runs as a different uid, so its own
+# connects are not redirected. Attribution still comes from inet_diag + /proc
+# (shareProcessNamespace lets the sidecar see the agent's /proc entries).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: browse-agent-0
+  namespace: agents
+  labels: {escrow.io/supervised: "true", escrow.io/mode: iptables}
+spec:
+  serviceAccountName: agent-b
+  shareProcessNamespace: true
+  initContainers:
+  - name: escrow-init
+    image: ghcr.io/45h0kg/connection-escrow:latest
+    command: ["sh", "-c", "iptables -t nat -A OUTPUT -p tcp -m owner --uid-owner 1000 -j REDIRECT --to-ports 15001"]
+    securityContext: {capabilities: {add: [NET_ADMIN]}}
+  containers:
+  - name: agent
+    image: your-agent-image:latest
+    securityContext: {runAsUser: 1000}
+  - name: escrow-interceptor
+    image: ghcr.io/45h0kg/connection-escrow:latest
+    command: ["python3", "-m", "escrow.cli", "interceptor", "--listen", "127.0.0.1:15001",
+              "--verifier", "escrow-verifier.escrow-system.svc:8443",
+              "--verifier-pk-file", "/etc/escrow-keys/verifier.public", "--record-key-file", "/etc/escrow-keys/record-key",
+              "--registry", "/etc/escrow/pods.json", "--audit", "/var/lib/escrow/interceptor_audit.jsonl"]
+    securityContext: {runAsUser: 1337, capabilities: {add: [SYS_PTRACE]}}   # read the agent's /proc/<pid>/fd
+    volumeMounts:
+    - {name: keys, mountPath: /etc/escrow-keys, readOnly: true}
+    - {name: state, mountPath: /var/lib/escrow}
+  volumes:
+  - {name: keys, secret: {secretName: escrow-node-keys}}
+  - {name: state, emptyDir: {}}

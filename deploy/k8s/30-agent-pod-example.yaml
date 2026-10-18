@@ -1,0 +1,15 @@
+# A supervised agent pod. Nothing in it changes: no sidecar, no proxy settings,
+# no library. The label is what the node agent keys on.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: triage-agent-0
+  namespace: agents
+  labels: {escrow.io/supervised: "true"}
+spec:
+  serviceAccountName: agent-a
+  automountServiceAccountToken: false
+  containers:
+  - name: agent
+    image: your-agent-image:latest
+    securityContext: {runAsNonRoot: true, allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}

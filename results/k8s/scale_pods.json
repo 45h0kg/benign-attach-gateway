@@ -1,0 +1,44 @@
+{
+ "/kubepods/besteffort/pod45b37609-a01d-4299-ae1f-4abd6e2fad8b": {
+  "name": "load-1",
+  "namespace": "lab",
+  "pod_uid": "45b37609-a01d-4299-ae1f-4abd6e2fad8b",
+  "service_account": "agent",
+  "spiffe_id": "spiffe://cluster.local/ns/lab/sa/agent"
+ },
+ "/kubepods/besteffort/pod9266fa00-947e-40f2-a2fd-88bba86f0821": {
+  "name": "load-2",
+  "namespace": "lab",
+  "pod_uid": "9266fa00-947e-40f2-a2fd-88bba86f0821",
+  "service_account": "agent",
+  "spiffe_id": "spiffe://cluster.local/ns/lab/sa/agent"
+ },
+ "/kubepods/besteffort/podac2d8f2e-6304-4ecb-bdbd-27fcc3a73e23": {
+  "name": "load-4",
+  "namespace": "lab",
+  "pod_uid": "ac2d8f2e-6304-4ecb-bdbd-27fcc3a73e23",
+  "service_account": "agent",
+  "spiffe_id": "spiffe://cluster.local/ns/lab/sa/agent"
+ },
+ "/kubepods/besteffort/podb7975ac8-aaca-44e7-b705-8d8506f7f16f": {
+  "name": "load-3",
+  "namespace": "lab",
+  "pod_uid": "b7975ac8-aaca-44e7-b705-8d8506f7f16f",
+  "service_account": "agent",
+  "spiffe_id": "spiffe://cluster.local/ns/lab/sa/agent"
+ },
+ "/kubepods/besteffort/podc0a0ca31-cec9-4ca0-b0b2-92f1e58b7c2d": {
+  "name": "load-0",
+  "namespace": "lab",
+  "pod_uid": "c0a0ca31-cec9-4ca0-b0b2-92f1e58b7c2d",
+  "service_account": "agent",
+  "spiffe_id": "spiffe://cluster.local/ns/lab/sa/agent"
+ },
+ "/kubepods/besteffort/podf6110157-f672-4ccc-b0ea-8f803877db8a": {
+  "name": "load-5",
+  "namespace": "lab",
+  "pod_uid": "f6110157-f672-4ccc-b0ea-8f803877db8a",
+  "service_account": "agent",
+  "spiffe_id": "spiffe://cluster.local/ns/lab/sa/agent"
+ }
+}

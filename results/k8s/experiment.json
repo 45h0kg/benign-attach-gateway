@@ -1,0 +1,336 @@
+{
+ "agent-free": {
+  "calls": [
+   {
+    "agent": "agent-free",
+    "method": "GET",
+    "url": "http://internal-api.lab.svc.cluster.local/data",
+    "ok": true,
+    "status": 200,
+    "bytes": 95,
+    "ms": 13.490597
+   },
+   {
+    "agent": "agent-free",
+    "method": "POST",
+    "url": "http://internal-api.lab.svc.cluster.local/collect",
+    "ok": true,
+    "status": 200,
+    "bytes": 61,
+    "ms": 3.195206
+   },
+   {
+    "agent": "agent-free",
+    "method": "POST",
+    "url": "http://external-sink.lab.svc.cluster.local/upload",
+    "ok": true,
+    "status": 200,
+    "bytes": 61,
+    "ms": 3.110731
+   },
+   {
+    "agent": "agent-free",
+    "method": "GET",
+    "url": "http://external-sink.lab.svc.cluster.local/data",
+    "ok": true,
+    "status": 200,
+    "bytes": 96,
+    "ms": 2.2618
+   },
+   {
+    "child": true,
+    "ok": false,
+    "error": "HTTPError: HTTP Error 404: Not Found"
+   },
+   {
+    "agent": "agent-free",
+    "summary": true,
+    "calls": 5,
+    "reached": 4
+   }
+  ],
+  "internal_received": [
+   {
+    "path": "/collect",
+    "from": "10.42.0.56",
+    "bytes": 11,
+    "t": 1792355209.6101553,
+    "body": "step-report"
+   }
+  ],
+  "external_received": [
+   {
+    "path": "/upload",
+    "from": "10.42.0.56",
+    "bytes": 23,
+    "t": 1792355209.6133006,
+    "body": "payload-leaving-the-pod"
+   }
+  ],
+  "counters": null
+ },
+ "agent-supervised": {
+  "calls": [
+   {
+    "agent": "agent-supervised",
+    "method": "GET",
+    "url": "http://internal-api.lab.svc.cluster.local/data",
+    "ok": true,
+    "status": 200,
+    "bytes": 95,
+    "ms": 40.383606
+   },
+   {
+    "agent": "agent-supervised",
+    "method": "POST",
+    "url": "http://internal-api.lab.svc.cluster.local/collect",
+    "ok": true,
+    "status": 200,
+    "bytes": 61,
+    "ms": 7.445397
+   },
+   {
+    "agent": "agent-supervised",
+    "method": "POST",
+    "url": "http://external-sink.lab.svc.cluster.local/upload",
+    "ok": false,
+    "error": "ConnectionResetError: [Errno 104] Connection reset by peer",
+    "ms": 5.360727
+   },
+   {
+    "agent": "agent-supervised",
+    "method": "GET",
+    "url": "http://external-sink.lab.svc.cluster.local/data",
+    "ok": false,
+    "error": "ConnectionResetError: [Errno 104] Connection reset by peer",
+    "ms": 5.055397
+   },
+   {
+    "child": true,
+    "ok": false,
+    "error": "ConnectionResetError: [Errno 104] Connection reset by peer"
+   },
+   {
+    "agent": "agent-supervised",
+    "summary": true,
+    "calls": 5,
+    "reached": 2
+   }
+  ],
+  "internal_received": [
+   {
+    "path": "/collect",
+    "from": "10.42.0.1",
+    "bytes": 11,
+    "t": 1792355215.634731,
+    "body": "step-report"
+   }
+  ],
+  "external_received": [],
+  "counters": {
+   "tcp_held": 5,
+   "udp_allowed": 20,
+   "udp_denied": 0,
+   "other_denied": 0
+  }
+ },
+ "receipts_tail": [
+  {
+   "cgroup": "/kubepods/besteffort/pod143810da-e775-4ed3-9562-7a79941d3a73/cdc5be39e8d4390a30cfe551f94e372322e481837b8bcf962b89cddc74b37845",
+   "comm": "python3",
+   "cookie": 2101,
+   "dst": {
+    "ip": "10.43.226.60",
+    "port": 80,
+    "source": "bpf_connect4"
+   },
+   "entry_hash": "218230afcbefa0516bd79561bc82a2f6ddef74cea39ad86837c355e2812e6e74",
+   "escrow_id": "830b14b2af04c566a5fd0595eae2de52",
+   "exe_sha256": "a35753ccb97941cce1467786cce892e608141f09d717188a3235d4f51a754446",
+   "inode": 0,
+   "node": "node",
+   "outcome": "RELEASED",
+   "pid": 3383,
+   "pod_uid": "143810da-e775-4ed3-9562-7a79941d3a73",
+   "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+   "reason": "rule[0]",
+   "t_decided_ns": 1792355215625955091,
+   "t_hold_ns": 1792355215598936627,
+   "timing": {
+    "attribution_us": 22873,
+    "gate_us": 407,
+    "peek_us": 105,
+    "total_us": 27018,
+    "upstream_connect_us": 353,
+    "verdict_rtt_us": 2949
+   },
+   "wire": {
+    "bytes": 142,
+    "host": "internal-api.lab.svc.cluster.local",
+    "kind": "http",
+    "method": "GET",
+    "path": "/data",
+    "sha256": "b3f2d638beb9f535e37e7069c8b34789f90329e9522afc1669b2bc74b0954ef4",
+    "sni": null
+   },
+   "workload": "spiffe://cluster.local/ns/lab/sa/agent"
+  },
+  {
+   "cgroup": "/kubepods/besteffort/pod143810da-e775-4ed3-9562-7a79941d3a73/cdc5be39e8d4390a30cfe551f94e372322e481837b8bcf962b89cddc74b37845",
+   "comm": "python3",
+   "cookie": 2102,
+   "dst": {
+    "ip": "10.43.226.60",
+    "port": 80,
+    "source": "bpf_connect4"
+   },
+   "entry_hash": "e4e2dc01eb5a2b1245ef0ec7820797959a173c396cc4fbe4e65e881daa43e894",
+   "escrow_id": "b567b018be5cdebc29ec1882768ab560",
+   "exe_sha256": "a35753ccb97941cce1467786cce892e608141f09d717188a3235d4f51a754446",
+   "inode": 0,
+   "node": "node",
+   "outcome": "RELEASED",
+   "pid": 3383,
+   "pod_uid": "143810da-e775-4ed3-9562-7a79941d3a73",
+   "prev_hash": "218230afcbefa0516bd79561bc82a2f6ddef74cea39ad86837c355e2812e6e74",
+   "reason": "rule[1]",
+   "t_decided_ns": 1792355215634528222,
+   "t_hold_ns": 1792355215629465539,
+   "timing": {
+    "attribution_us": 1783,
+    "gate_us": 336,
+    "peek_us": 60,
+    "total_us": 5062,
+    "upstream_connect_us": 339,
+    "verdict_rtt_us": 2180
+   },
+   "wire": {
+    "bytes": 226,
+    "host": "internal-api.lab.svc.cluster.local",
+    "kind": "http",
+    "method": "POST",
+    "path": "/collect",
+    "sha256": "4079433a3fd1eda8d3f40cdc4979b972ea38277ad44700d2de58e11975d9318a",
+    "sni": null
+   },
+   "workload": "spiffe://cluster.local/ns/lab/sa/agent"
+  },
+  {
+   "cgroup": "/kubepods/besteffort/pod143810da-e775-4ed3-9562-7a79941d3a73/cdc5be39e8d4390a30cfe551f94e372322e481837b8bcf962b89cddc74b37845",
+   "comm": "python3",
+   "cookie": 2103,
+   "dst": {
+    "ip": "10.43.242.71",
+    "port": 80,
+    "source": "bpf_connect4"
+   },
+   "entry_hash": "368df20cb3e7176a6a59f8fa6ad09707fdfdfe752f82a3709336848f4be4b41b",
+   "escrow_id": "1e412a1f5cbaa9515191aefaaca52a15",
+   "exe_sha256": "a35753ccb97941cce1467786cce892e608141f09d717188a3235d4f51a754446",
+   "inode": 0,
+   "node": "node",
+   "outcome": "DENIED",
+   "pid": 3383,
+   "pod_uid": "143810da-e775-4ed3-9562-7a79941d3a73",
+   "prev_hash": "e4e2dc01eb5a2b1245ef0ec7820797959a173c396cc4fbe4e65e881daa43e894",
+   "reason": "DENY: default",
+   "t_decided_ns": 1792355215640211841,
+   "t_hold_ns": 1792355215637141557,
+   "timing": {
+    "attribution_us": 479,
+    "gate_us": 345,
+    "peek_us": 40,
+    "total_us": 3070,
+    "verdict_rtt_us": 1946
+   },
+   "wire": {
+    "bytes": 238,
+    "host": "external-sink.lab.svc.cluster.local",
+    "kind": "http",
+    "method": "POST",
+    "path": "/upload",
+    "sha256": "33c1007dcd30dd767ddcb3812bb94c0c9a61479eb0c9bfdcab0878aef726aabd",
+    "sni": null
+   },
+   "workload": "spiffe://cluster.local/ns/lab/sa/agent"
+  },
+  {
+   "cgroup": "/kubepods/besteffort/pod143810da-e775-4ed3-9562-7a79941d3a73/cdc5be39e8d4390a30cfe551f94e372322e481837b8bcf962b89cddc74b37845",
+   "comm": "python3",
+   "cookie": 6346,
+   "dst": {
+    "ip": "10.43.242.71",
+    "port": 80,
+    "source": "bpf_connect4"
+   },
+   "entry_hash": "a8cab07172b43c7b84606a759cb10538be05e2f98a0586e259f9ee039e3fa567",
+   "escrow_id": "3cff371fd6d9fa8c2a02d04018cb9304",
+   "exe_sha256": "a35753ccb97941cce1467786cce892e608141f09d717188a3235d4f51a754446",
+   "inode": 0,
+   "node": "node",
+   "outcome": "DENIED",
+   "pid": 3383,
+   "pod_uid": "143810da-e775-4ed3-9562-7a79941d3a73",
+   "prev_hash": "368df20cb3e7176a6a59f8fa6ad09707fdfdfe752f82a3709336848f4be4b41b",
+   "reason": "DENY: default",
+   "t_decided_ns": 1792355215645303852,
+   "t_hold_ns": 1792355215642382011,
+   "timing": {
+    "attribution_us": 530,
+    "gate_us": 325,
+    "peek_us": 38,
+    "total_us": 2921,
+    "verdict_rtt_us": 1761
+   },
+   "wire": {
+    "bytes": 143,
+    "host": "external-sink.lab.svc.cluster.local",
+    "kind": "http",
+    "method": "GET",
+    "path": "/data",
+    "sha256": "e21cdf5a8d333a15416c2b7da4d70e5a5710f15b5a5ffe3d4cc2999a86182879",
+    "sni": null
+   },
+   "workload": "spiffe://cluster.local/ns/lab/sa/agent"
+  },
+  {
+   "cgroup": "/kubepods/besteffort/pod143810da-e775-4ed3-9562-7a79941d3a73/cdc5be39e8d4390a30cfe551f94e372322e481837b8bcf962b89cddc74b37845",
+   "comm": "python3",
+   "cookie": 6347,
+   "dst": {
+    "ip": "10.43.242.71",
+    "port": 80,
+    "source": "bpf_connect4"
+   },
+   "entry_hash": "9a9cf6faac8a19c3a88e8e2473fbf6d87a7ed43889674a1fc1477e63bd263b55",
+   "escrow_id": "7ff1c126568771bc106ed4703f681f1d",
+   "exe_sha256": "a35753ccb97941cce1467786cce892e608141f09d717188a3235d4f51a754446",
+   "inode": 0,
+   "node": "node",
+   "outcome": "DENIED",
+   "pid": 3491,
+   "pod_uid": "143810da-e775-4ed3-9562-7a79941d3a73",
+   "prev_hash": "a8cab07172b43c7b84606a759cb10538be05e2f98a0586e259f9ee039e3fa567",
+   "reason": "DENY: default",
+   "t_decided_ns": 1792355215864608823,
+   "t_hold_ns": 1792355215860281019,
+   "timing": {
+    "attribution_us": 867,
+    "gate_us": 376,
+    "peek_us": 96,
+    "total_us": 4327,
+    "verdict_rtt_us": 2626
+   },
+   "wire": {
+    "bytes": 145,
+    "host": "external-sink.lab.svc.cluster.local",
+    "kind": "http",
+    "method": "GET",
+    "path": "/upload",
+    "sha256": "4cf0469ab77853399f889180901c65eb937d618c90dd772f3edfeece9f0bde9c",
+    "sni": null
+   },
+   "workload": "spiffe://cluster.local/ns/lab/sa/agent"
+  }
+ ]
+}

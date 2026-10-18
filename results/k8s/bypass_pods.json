@@ -1,0 +1,9 @@
+{
+ "/kubepods/besteffort/podc4daabbd-d4eb-4c59-8b11-81ba601dfe54": {
+  "name": "bypass-escrow",
+  "namespace": "lab",
+  "pod_uid": "c4daabbd-d4eb-4c59-8b11-81ba601dfe54",
+  "service_account": "agent",
+  "spiffe_id": "spiffe://cluster.local/ns/lab/sa/agent"
+ }
+}

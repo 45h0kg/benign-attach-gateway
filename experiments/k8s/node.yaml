@@ -1,0 +1,122 @@
+# Verifier (Deployment) + node agent (DaemonSet). Both run the escrow package from the
+# escrow-code ConfigMap over the lab image's Python, so no rebuild is needed to change code.
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: escrow-code, namespace: escrow-system}
+# filled by the driver: kubectl create cm escrow-code --from-file=escrow/
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: escrow-verifier, namespace: escrow-system}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: escrow-verifier}}
+  template:
+    metadata: {labels: {app: escrow-verifier}}
+    spec:
+      serviceAccountName: escrow-verifier
+      containers:
+      - name: verifier
+        image: escrow/lab:dev
+        imagePullPolicy: Never
+        command: ["python3", "-m", "escrow.cli", "verifier",
+                  "--policy", "/etc/escrow/policy.json",
+                  "--key", "/etc/escrow-keys/verifier.secret", "--record-keys-file", "/etc/escrow-keys/record-key",
+                  "--listen", "0.0.0.0:8443", "--audit", "/var/lib/escrow/verifier_audit.jsonl",
+                  "--kube-services", "--self-service", "escrow-system/escrow-verifier"]
+        env: [{name: PYTHONPATH, value: "/opt/escrow:/etc/escrow-code/.."}]
+        ports: [{containerPort: 8443}]
+        volumeMounts:
+        - {name: policy, mountPath: /etc/escrow, readOnly: true}
+        - {name: keys, mountPath: /etc/escrow-keys, readOnly: true}
+        - {name: code, mountPath: /opt/escrow/escrow, readOnly: true}
+        - {name: state, mountPath: /var/lib/escrow}
+      volumes:
+      - {name: policy, configMap: {name: escrow-policy}}
+      - {name: keys, secret: {secretName: escrow-verifier-key}}
+      - {name: code, configMap: {name: escrow-code}}
+      - {name: state, emptyDir: {}}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: escrow-verifier, namespace: escrow-system}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata: {name: escrow-verifier}
+rules:
+- {apiGroups: [""], resources: [services], verbs: [get, list, watch]}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata: {name: escrow-verifier}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: escrow-verifier}
+subjects: [{kind: ServiceAccount, name: escrow-verifier, namespace: escrow-system}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: escrow-verifier, namespace: escrow-system}
+spec:
+  selector: {app: escrow-verifier}
+  ports: [{port: 8443, targetPort: 8443}]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: escrow-node-agent, namespace: escrow-system}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata: {name: escrow-node-agent}
+rules:
+- {apiGroups: [""], resources: [pods], verbs: [get, list, watch]}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata: {name: escrow-node-agent}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: escrow-node-agent}
+subjects: [{kind: ServiceAccount, name: escrow-node-agent, namespace: escrow-system}]
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata: {name: escrow-node-agent, namespace: escrow-system}
+spec:
+  selector: {matchLabels: {app: escrow-node-agent}}
+  template:
+    metadata: {labels: {app: escrow-node-agent}}
+    spec:
+      serviceAccountName: escrow-node-agent
+      hostNetwork: true
+      hostPID: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: interceptor
+        image: escrow/lab:dev
+        imagePullPolicy: Never
+        command: ["python3", "-m", "escrow.cli", "interceptor",
+                  "--listen", "0.0.0.0:15001",
+                  "--verifier", "escrow-verifier.escrow-system.svc.cluster.local:8443",
+                  "--verifier-pk-file", "/etc/escrow-keys/verifier.public",
+                  "--record-key-file", "/etc/escrow-keys/record-key",
+                  "--registry", "/var/lib/escrow/pods.json", "--audit", "/var/lib/escrow/interceptor_audit.jsonl",
+                  "--bpf-obj", "/opt/escrow/escrow_connect4.bpf.o", "--kube-api",
+                  "--kubepods", "/sys/fs/cgroup/kubepods",
+                  "--unified-root", "/sys/fs/cgroup",
+                  "--redirect-ip", "$(HOST_IP)", "--dns", "$(DNS_IP):53",
+                  "--deadline-ms", "2000", "--watch-s", "5"]
+        env:
+        - {name: NODE_NAME, valueFrom: {fieldRef: {fieldPath: spec.nodeName}}}
+        - {name: HOST_IP, valueFrom: {fieldRef: {fieldPath: status.hostIP}}}
+        - {name: DNS_IP, value: "10.43.0.10"}   # kube-dns ClusterIP; the driver overrides if different
+        - {name: PYTHONPATH, value: "/opt/escrow"}
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - {name: cgroup, mountPath: /sys/fs/cgroup}
+        - {name: keys, mountPath: /etc/escrow-keys, readOnly: true}
+        - {name: code, mountPath: /opt/escrow/escrow, readOnly: true}
+        - {name: state, mountPath: /var/lib/escrow}
+      volumes:
+      - {name: cgroup, hostPath: {path: /sys/fs/cgroup}}
+      - {name: keys, secret: {secretName: escrow-node-keys}}
+      - {name: code, configMap: {name: escrow-code}}
+      - {name: state, hostPath: {path: /var/lib/escrow, type: DirectoryOrCreate}}

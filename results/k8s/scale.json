@@ -1,0 +1,81 @@
+{
+ "summary": {
+  "pods": 6,
+  "per_pod": 100,
+  "released": 600,
+  "agent_reached": 600,
+  "wall_s": 10.25,
+  "throughput_conn_per_s": 58.6,
+  "hold_ms_p50": 18.34,
+  "hold_ms_p95": 37.57,
+  "hold_ms_p99": 57.19,
+  "counters": {
+   "tcp_held": 600,
+   "udp_allowed": 2400,
+   "udp_denied": 0,
+   "other_denied": 0
+  }
+ },
+ "per_pod": [
+  {
+   "agent": "load-0",
+   "load_summary": true,
+   "n": 100,
+   "reached": 100,
+   "wall_s": 3.54,
+   "conn_per_s": 28.2,
+   "ms_p50": 31.67,
+   "ms_p95": 75.03
+  },
+  {
+   "agent": "load-1",
+   "load_summary": true,
+   "n": 100,
+   "reached": 100,
+   "wall_s": 3.55,
+   "conn_per_s": 28.2,
+   "ms_p50": 33.2,
+   "ms_p95": 63.84
+  },
+  {
+   "agent": "load-2",
+   "load_summary": true,
+   "n": 100,
+   "reached": 100,
+   "wall_s": 3.56,
+   "conn_per_s": 28.1,
+   "ms_p50": 30.9,
+   "ms_p95": 82.87
+  },
+  {
+   "agent": "load-3",
+   "load_summary": true,
+   "n": 100,
+   "reached": 100,
+   "wall_s": 3.42,
+   "conn_per_s": 29.2,
+   "ms_p50": 30.57,
+   "ms_p95": 60.68
+  },
+  {
+   "agent": "load-4",
+   "load_summary": true,
+   "n": 100,
+   "reached": 100,
+   "wall_s": 3.0,
+   "conn_per_s": 33.3,
+   "ms_p50": 27.89,
+   "ms_p95": 49.79
+  },
+  {
+   "agent": "load-5",
+   "load_summary": true,
+   "n": 100,
+   "reached": 100,
+   "wall_s": 2.91,
+   "conn_per_s": 34.4,
+   "ms_p50": 27.17,
+   "ms_p95": 51.5
+  }
+ ]
+}

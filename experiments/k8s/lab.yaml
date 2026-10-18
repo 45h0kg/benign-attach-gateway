@@ -1,0 +1,58 @@
+# Lab for the on-cluster experiment. One namespace, two destination services
+# (one the agent may reach, one it may not), the verifier, and the agent pods.
+# The node agent (interceptor + eBPF) runs as a DaemonSet from 20-node-agent in
+# the driver, not here.
+apiVersion: v1
+kind: Namespace
+metadata: {name: lab}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: lab-code, namespace: lab}
+# filled by the driver from experiments/k8s/lab/ (kubectl create cm --from-file)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: internal-api, namespace: lab}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: internal-api}}
+  template:
+    metadata: {labels: {app: internal-api}}
+    spec:
+      containers:
+      - name: svc
+        image: escrow/lab:dev
+        imagePullPolicy: Never
+        command: ["python3", "/opt/escrow/lab/http_service.py", "internal-api", "8080"]
+        ports: [{containerPort: 8080}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: internal-api, namespace: lab}
+spec:
+  selector: {app: internal-api}
+  ports: [{port: 80, targetPort: 8080}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: external-sink, namespace: lab}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: external-sink}}
+  template:
+    metadata: {labels: {app: external-sink}}
+    spec:
+      containers:
+      - name: svc
+        image: escrow/lab:dev
+        imagePullPolicy: Never
+        command: ["python3", "/opt/escrow/lab/http_service.py", "external-sink", "8080"]
+        ports: [{containerPort: 8080}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: external-sink, namespace: lab}
+spec:
+  selector: {app: external-sink}
+  ports: [{port: 80, targetPort: 8080}]

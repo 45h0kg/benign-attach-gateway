@@ -1,0 +1,125 @@
+=== CONNECTION ESCROW: FULL REPRODUCTION RUN  2026-10-18 19:45:39 UTC  git: e2ba25a
+--- ENVIRONMENT ---
+Linux vm 6.18.44-fc-v139 #1 SMP PREEMPT_DYNAMIC @0 x86_64 x86_64 x86_64 GNU/Linux
+model name	: Intel(R) Xeon(R) Processor @ 2.80GHz
+vCPUs: 2
+MemTotal:        8222320 kB
+Python 3.13.16
+Ubuntu clang version 18.1.3 (1ubuntu1)
+iptables v1.8.10 (nf_tables)
+cryptography 50.0.1
+
+--- STAGE 0: BUILD eBPF program ---
+start: 19:45:39 UTC
+instructions: 45
+stage 0 exit: 0
+
+--- STAGE 1: ADVERSARIAL SUITE, eBPF cgroup/connect4 hold point ---
+start: 19:45:39 UTC
+
+=== hold point: bpf ===
+  [PASS] T0 allowed: agent connected and got the echo
+  [PASS] T0 allowed: destination accepted exactly one connection carrying the parked bytes
+  [PASS] T0 allowed: receipt RELEASED, attributed to the agent pid, pod-a cgroup and SPIFFE id  -- src=bpf_connect4 pid=6789 cookie=5377
+  [PASS] T0 allowed: executable identified by digest
+  [PASS] T1 denied: agent's connection was reset  -- ConnectionResetError: [Errno 104] Connection reset by peer
+  [PASS] T1 denied: destination never accepted a connection
+  [PASS] T1 denied: receipt DENIED by default rule  -- DENY: default
+  [PASS] T2 unknown workload: (bpf) a process outside the attached cgroups is not supervised; covered under iptables
+  [PASS] T3 deadline: no verdict in 1000 ms -> reset, DENIED_DEADLINE  -- 1002 ms
+  [PASS] T3 deadline: destination never accepted a connection
+  [PASS] T3 deadline: agent released within 1.0-1.6 s  -- 1.07 s
+  [PASS] T4 late verdict: a correctly signed ALLOW arriving after the deadline is refused  -- stale: escrow id not live (expired or already decided)
+  [PASS] T4 late verdict: the verifier's late release did not open anything
+  [PASS] T5 forged verdict (wrong key) refused  -- verdict signature invalid
+  [PASS] T5 verdict for another socket cookie refused  -- verdict bound to a different socket cookie
+  [PASS] T5 verdict for another destination / first bytes refused  -- verdict bound to a different destination or first bytes
+  [PASS] T5 expired verdict refused  -- verdict expired
+  [PASS] T5 valid verdict accepted once, replay refused  -- stale: escrow id not live (expired or already decided)
+  [PASS] T6 agent -> verifier: intercepted and refused (destination_is_verifier)  -- DENY: destination_is_verifier
+  [PASS] T6 agent -> verifier: only the interceptor's record reached the verifier
+  [PASS] T7 TLS allowed SNI: released; destination got the identical ClientHello
+  [PASS] T7 TLS other SNI: reset, destination untouched  -- DENY: default
+  [PASS] T8 HTTP GET /v1/: released  -- rule[2]
+  [PASS] T8 HTTP POST /v1/: denied  -- DENY: default
+  [PASS] T8 HTTP GET /admin: denied  -- DENY: default
+  [PASS] T9 budget 2/min for pod-b: third connection denied  -- ['RELEASED', 'RELEASED', 'DENIED']
+  [PASS] T10 hold -> operator allow within deadline: released  -- released:0826bd9529803cc3
+  [PASS] T10 hold -> operator deny: reset  -- DENY: refused:6f4c2cccdfbe7c6c
+  [PASS] T11 child process inherits the hold point: denied, destination untouched  -- DENY: default
+  [PASS] T11 renamed binary: still attributed to pod-a by cgroup; digest equals the real interpreter  -- not-python
+  [PASS] T12 verifier unreachable: allowed destination still refused (fail closed)  -- [Errno 111] Connect call failed ('127.0.0.1', 55493)
+  [PASS] T13 interceptor and verifier audit chains verify  -- 17 / 16 entries
+  [PASS] T13 tampered receipt breaks the chain at that entry
+
+33/33 checks passed
+interceptor stats: {"bpf": {"RELEASED": 7, "DENIED": 8, "DENIED_DEADLINE": 1, "DENIED_BAD_VERDICT": 0, "DENIED_VERIFIER_UNREACHABLE": 1, "DENIED_UNKNOWN_DESTINATION": 0, "UPSTREAM_FAILED": 0, "accepted": 17}}
+stage 1 exit: 0
+
+--- STAGE 2: ADVERSARIAL SUITE, iptables REDIRECT hold point ---
+start: 19:45:43 UTC
+
+=== hold point: iptables ===
+  [PASS] T0 allowed: agent connected and got the echo
+  [PASS] T0 allowed: destination accepted exactly one connection carrying the parked bytes
+  [PASS] T0 allowed: receipt RELEASED, attributed to the agent pid, pod-a cgroup and SPIFFE id  -- src=so_original_dst pid=6837 cookie=5391
+  [PASS] T0 allowed: executable identified by digest
+  [PASS] T1 denied: agent's connection was reset  -- ConnectionResetError: [Errno 104] Connection reset by peer
+  [PASS] T1 denied: destination never accepted a connection
+  [PASS] T1 denied: receipt DENIED by default rule  -- DENY: default
+  [PASS] T2 unknown workload: refused even for an allowed destination  -- DENY: unknown_workload
+  [PASS] T3 deadline: no verdict in 1000 ms -> reset, DENIED_DEADLINE  -- 1002 ms
+  [PASS] T3 deadline: destination never accepted a connection
+  [PASS] T3 deadline: agent released within 1.0-1.6 s  -- 1.06 s
+  [PASS] T4 late verdict: a correctly signed ALLOW arriving after the deadline is refused  -- stale: escrow id not live (expired or already decided)
+  [PASS] T4 late verdict: the verifier's late release did not open anything
+  [PASS] T5 forged verdict (wrong key) refused  -- verdict signature invalid
+  [PASS] T5 verdict for another socket cookie refused  -- verdict bound to a different socket cookie
+  [PASS] T5 verdict for another destination / first bytes refused  -- verdict bound to a different destination or first bytes
+  [PASS] T5 expired verdict refused  -- verdict expired
+  [PASS] T5 valid verdict accepted once, replay refused  -- stale: escrow id not live (expired or already decided)
+  [PASS] T6 agent -> verifier: intercepted and refused (destination_is_verifier)  -- DENY: destination_is_verifier
+  [PASS] T6 agent -> verifier: only the interceptor's record reached the verifier
+  [PASS] T7 TLS allowed SNI: released; destination got the identical ClientHello
+  [PASS] T7 TLS other SNI: reset, destination untouched  -- DENY: default
+  [PASS] T8 HTTP GET /v1/: released  -- rule[2]
+  [PASS] T8 HTTP POST /v1/: denied  -- DENY: default
+  [PASS] T8 HTTP GET /admin: denied  -- DENY: default
+  [PASS] T9 budget 2/min for pod-b: third connection denied  -- ['RELEASED', 'RELEASED', 'DENIED']
+  [PASS] T10 hold -> operator allow within deadline: released  -- released:35a262c1e0c39b1a
+  [PASS] T10 hold -> operator deny: reset  -- DENY: refused:939f6c6450db90ab
+  [PASS] T11 child process inherits the hold point: denied, destination untouched  -- DENY: default
+  [PASS] T11 renamed binary: still attributed to pod-a by cgroup; digest equals the real interpreter  -- not-python
+  [PASS] T12 verifier unreachable: allowed destination still refused (fail closed)  -- [Errno 111] Connect call failed ('127.0.0.1', 40005)
+  [PASS] T13 interceptor and verifier audit chains verify  -- 18 / 17 entries
+  [PASS] T13 tampered receipt breaks the chain at that entry
+
+33/33 checks passed
+interceptor stats: {"iptables": {"RELEASED": 7, "DENIED": 9, "DENIED_DEADLINE": 1, "DENIED_BAD_VERDICT": 0, "DENIED_VERIFIER_UNREACHABLE": 1, "DENIED_UNKNOWN_DESTINATION": 0, "UPSTREAM_FAILED": 0, "accepted": 18}}
+stage 2 exit: 0
+
+--- STAGE 3: LATENCY, native Ed25519 (cryptography) if available ---
+start: 19:45:47 UTC
+[bpf] baseline agent total 888 us | supervised 6054 us (p95 7948) | hold 4711 us = attribution 988 + peek 95 + verdict rtt 2407 (verifier decide 23) + gate 329 + upstream 420 | 16-way: hold 43093 us, 94.6 conn/s, procs 68
+[iptables] baseline agent total 860 us | supervised 6719 us (p95 8763) | hold 5460 us = attribution 1811 + peek 93 + verdict rtt 2334 (verifier decide 24) + gate 328 + upstream 427 | 16-way: hold 70960 us, 123.7 conn/s, procs 68
+stage 3 exit: 0
+
+--- STAGE 4: LATENCY, pure-Python Ed25519 ---
+start: 19:46:34 UTC
+[bpf] baseline agent total 830 us | supervised 10068 us (p95 13594) | hold 8866 us = attribution 914 + peek 91 + verdict rtt 3697 (verifier decide 19) + gate 3130 + upstream 573 | 16-way: hold 104899 us, 86.2 conn/s, procs 67
+[iptables] baseline agent total 900 us | supervised 11842 us (p95 15847) | hold 10543 us = attribution 1839 + peek 98 + verdict rtt 3995 (verifier decide 23) + gate 3246 + upstream 645 | 16-way: hold 134878 us, 65.0 conn/s, procs 68
+stage 4 exit: 0
+
+--- STAGE 5: CLI END-TO-END (curl as the agent) ---
+start: 19:47:24 UTC
+curl (supervised) -> 127.0.0.1:18080 : ok from 18080
+curl (supervised) -> verifier 18443 : exit=56 (56 = connection reset, expected)
+curl (supervised) -> 127.0.0.1:18443 via explicit path again, now from a child shell: RESET
+attached escrow_connect4 to /sys/fs/cgroup/unified/escrow-cli-10270
+interceptor on ('127.0.0.1', 15001), verifier 127.0.0.1:18443, deadline 2000 ms
+receipt: RELEASED rule[0] {'ip': '127.0.0.1', 'port': 18080, 'source': 'bpf_connect4'} comm=curl pid=10288 cookie=2022
+receipt: DENIED DENY: destination_is_verifier {'ip': '127.0.0.1', 'port': 18443, 'source': 'bpf_connect4'} comm=curl pid=10291 cookie=6258
+receipt: DENIED DENY: destination_is_verifier {'ip': '127.0.0.1', 'port': 18443, 'source': 'bpf_connect4'} comm=curl pid=10294 cookie=6259
+stage 5 exit: 0
+
+RUN COMPLETE 2026-10-18 19:47:26 UTC

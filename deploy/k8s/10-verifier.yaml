@@ -1,0 +1,77 @@
+# Verifier: its own deployment, own key, reachable only from the node agents.
+# The agent pods never reach it: their connect() is escrowed in-kernel and the
+# verifier refuses its own address as a destination (destination_is_verifier).
+apiVersion: v1
+kind: Secret
+metadata: {name: escrow-verifier-key, namespace: escrow-system}
+type: Opaque
+stringData:
+  verifier.secret: "<hex seed from: python3 -m escrow.cli keygen --out k>"
+  record-key: "<hex from k.record-key>"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: escrow-policy, namespace: escrow-system}
+data:
+  policy.json: |
+    {"workloads": {
+       "spiffe://cluster.local/ns/agents/sa/agent-a": {
+         "rules": [
+           {"host": "api.example.com", "port": 443, "action": "allow"},
+           {"host": "*.internal.example", "port": 443, "action": "hold"}
+         ],
+         "budget_per_minute": 120}},
+     "default": "deny"}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: escrow-verifier, namespace: escrow-system}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: escrow-verifier}}
+  template:
+    metadata: {labels: {app: escrow-verifier}}
+    spec:
+      automountServiceAccountToken: false
+      securityContext: {runAsNonRoot: true, runAsUser: 10001, seccompProfile: {type: RuntimeDefault}}
+      containers:
+      - name: verifier
+        image: ghcr.io/45h0kg/connection-escrow:latest
+        command: ["python3", "-m", "escrow.cli", "verifier", "--policy", "/etc/escrow/policy.json",
+                  "--key", "/etc/escrow-keys/verifier.secret", "--record-keys-file", "/etc/escrow-keys/record-key",
+                  "--listen", "0.0.0.0:8443", "--audit", "/var/lib/escrow/verifier_audit.jsonl"]
+        ports: [{containerPort: 8443}]
+        securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+        volumeMounts:
+        - {name: policy, mountPath: /etc/escrow, readOnly: true}
+        - {name: keys, mountPath: /etc/escrow-keys, readOnly: true}
+        - {name: audit, mountPath: /var/lib/escrow}
+      volumes:
+      - {name: policy, configMap: {name: escrow-policy}}
+      - {name: keys, secret: {secretName: escrow-verifier-key}}
+      - {name: audit, persistentVolumeClaim: {claimName: escrow-verifier-audit}}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: {name: escrow-verifier-audit, namespace: escrow-system}
+spec: {accessModes: [ReadWriteOnce], resources: {requests: {storage: 1Gi}}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: escrow-verifier, namespace: escrow-system}
+spec:
+  selector: {app: escrow-verifier}
+  ports: [{port: 8443, targetPort: 8443}]
+---
+# Only the node agents (host network) may talk to the verifier.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: escrow-verifier-ingress, namespace: escrow-system}
+spec:
+  podSelector: {matchLabels: {app: escrow-verifier}}
+  policyTypes: [Ingress, Egress]
+  ingress:
+  - from:
+    - ipBlock: {cidr: 10.0.0.0/8}       # node CIDR: the DaemonSet runs with hostNetwork
+    ports: [{port: 8443}]
+  egress: []                            # the verifier initiates nothing

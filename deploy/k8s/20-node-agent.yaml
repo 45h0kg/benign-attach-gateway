@@ -1,0 +1,65 @@
+# Node agent: one per node. Loads escrow_connect4 into the cgroup of every pod
+# labelled escrow.io/supervised=true, runs the interceptor on a node-local
+# address, and signs receipts. Needs the host cgroup tree, /proc (attribution),
+# and CAP_BPF/CAP_NET_ADMIN/CAP_SYS_ADMIN.
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: escrow-node-agent, namespace: escrow-system}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata: {name: escrow-node-agent}
+rules:
+- apiGroups: [""]
+  resources: [pods]
+  verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata: {name: escrow-node-agent}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: escrow-node-agent}
+subjects: [{kind: ServiceAccount, name: escrow-node-agent, namespace: escrow-system}]
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata: {name: escrow-node-agent, namespace: escrow-system}
+spec:
+  selector: {matchLabels: {app: escrow-node-agent}}
+  template:
+    metadata: {labels: {app: escrow-node-agent}}
+    spec:
+      serviceAccountName: escrow-node-agent
+      hostNetwork: true
+      hostPID: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: interceptor
+        image: ghcr.io/45h0kg/connection-escrow:latest
+        command: ["python3", "-m", "escrow.cli", "interceptor",
+                  "--listen", "127.0.0.1:15001",
+                  "--verifier", "escrow-verifier.escrow-system.svc:8443",
+                  "--verifier-pk-file", "/etc/escrow-keys/verifier.public",
+                  "--record-key-file", "/etc/escrow-keys/record-key",
+                  "--registry", "/var/lib/escrow/pods.json", "--audit", "/var/lib/escrow/interceptor_audit.jsonl",
+                  "--bpf-obj", "/opt/escrow/escrow_connect4.bpf.o", "--kube-api",
+                  "--kubepods", "/host/sys/fs/cgroup/kubepods.slice", "--deadline-ms", "2000"]
+        env:
+        - {name: NODE_NAME, valueFrom: {fieldRef: {fieldPath: spec.nodeName}}}
+        securityContext:
+          privileged: true          # CAP_BPF + CAP_SYS_ADMIN for cgroup attach; narrow once your kernel allows it
+        volumeMounts:
+        - {name: cgroup, mountPath: /host/sys/fs/cgroup, readOnly: true}
+        - {name: keys, mountPath: /etc/escrow-keys, readOnly: true}
+        - {name: state, mountPath: /var/lib/escrow}
+      volumes:
+      - {name: cgroup, hostPath: {path: /sys/fs/cgroup}}
+      - {name: keys, secret: {secretName: escrow-node-keys}}
+      - {name: state, hostPath: {path: /var/lib/escrow, type: DirectoryOrCreate}}
+---
+apiVersion: v1
+kind: Secret
+metadata: {name: escrow-node-keys, namespace: escrow-system}
+type: Opaque
+stringData:
+  verifier.public: "<hex from k.public>"
+  record-key: "<hex from k.record-key>"

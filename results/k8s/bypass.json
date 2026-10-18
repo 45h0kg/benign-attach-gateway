@@ -1,0 +1,71 @@
+{
+ "proxy": {
+  "calls": [
+   {
+    "agent": "bypass-proxy",
+    "method": "POST",
+    "url": "http://external-sink.lab.svc.cluster.local/upload",
+    "ok": true,
+    "status": 403,
+    "ms": 11.874968
+   },
+   {
+    "agent": "bypass-proxy",
+    "raw": true,
+    "host": "10.43.242.71",
+    "port": 80,
+    "ok": true,
+    "ms": 0.978759
+   },
+   {
+    "agent": "bypass-proxy",
+    "summary": true,
+    "calls": 2,
+    "reached": 2
+   }
+  ],
+  "external_received": [
+   {
+    "path": "/upload",
+    "from": "10.42.0.58",
+    "bytes": 11,
+    "t": 1792355318.7980196,
+    "body": "raw-socket!"
+   }
+  ]
+ },
+ "escrow": {
+  "calls": [
+   {
+    "agent": "bypass-escrow",
+    "method": "POST",
+    "url": "http://external-sink.lab.svc.cluster.local/upload",
+    "ok": false,
+    "error": "ConnectionResetError: [Errno 104] Connection reset by peer",
+    "ms": 41.163623
+   },
+   {
+    "agent": "bypass-escrow",
+    "raw": true,
+    "host": "10.43.242.71",
+    "port": 80,
+    "ok": false,
+    "error": "ConnectionResetError: [Errno 104] Connection reset by peer",
+    "ms": 4.344126
+   },
+   {
+    "agent": "bypass-escrow",
+    "summary": true,
+    "calls": 2,
+    "reached": 0
+   }
+  ],
+  "external_received": [],
+  "counters": {
+   "tcp_held": 2,
+   "udp_allowed": 4,
+   "udp_denied": 0,
+   "other_denied": 0
+  }
+ }
+}
