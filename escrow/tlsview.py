@@ -35,8 +35,10 @@ BPF_PROG_LOAD = 5
 BPF_PROG_TYPE_KPROBE = 2
 PERF_EVENT_IOC_ENABLE = 0x2400
 PERF_EVENT_IOC_SET_BPF = 0x40042408
-MAXDATA = 256
-VSZ = 16 + MAXDATA
+MAXDATA = 2048
+HDR = struct.Struct("=IIQII")          # pid, tid, handle, len, cap
+VSZ = HDR.size + MAXDATA
+BPF_MAP_LOOKUP_AND_DELETE_ELEM = 21
 
 # OpenSSL 3 write functions; arg layout is (ssl, buf=rsi, num=rdx[, *written]) for both.
 DEFAULT_LIB = "/usr/lib/x86_64-linux-gnu/libssl.so.3"
@@ -107,6 +109,7 @@ class TlsPlaintextProbe:
             raise LookupError(f"no TLS write symbol for runtime {runtime!r} in {lib}")
         self.prog, self.maps = self._load(obj_path)
         self.writes = self.maps["writes"]
+        self.writes_q = self.maps["writes_q"]
         self.perf_fds: list[int] = []
         self._keep: list = []
 
@@ -192,16 +195,32 @@ class TlsPlaintextProbe:
             keys.append(nxt.raw)
             val = ctypes.create_string_buffer(VSZ)
             if self._cmd(BPF_MAP_LOOKUP_ELEM, struct.pack("=IIQQQ", self.writes, 0, ctypes.addressof(key), ctypes.addressof(val), 0)) == 0:
-                epid, tid, length, cap = struct.unpack("=IIII", val.raw[:16])
+                epid, tid, handle, length, cap = HDR.unpack(val.raw[:HDR.size])
                 if epid == pid:
-                    best = val.raw[16:16 + cap]
+                    best = val.raw[HDR.size:HDR.size + cap]
                     if consume:
                         self._cmd(BPF_MAP_DELETE_ELEM, struct.pack("=IIQQQ", self.writes, 0, ctypes.addressof(key), 0, 0))
         return best
+
+    def drain(self) -> list[dict]:
+        """Pop every captured write from the FIFO, oldest first. Each entry is
+        {pid, tid, handle, len, cap, data}; `len` is the full plaintext length of the
+        write, `data` the first `cap` bytes of it. The stream gate uses `len` to know how
+        many ciphertext bytes the write will produce and `handle` to tell TLS sessions
+        apart within one process."""
+        out = []
+        val = ctypes.create_string_buffer(VSZ)
+        while self._cmd(BPF_MAP_LOOKUP_AND_DELETE_ELEM,
+                        struct.pack("=IIQQQ", self.writes_q, 0, 0, ctypes.addressof(val), 0)) == 0:
+            pid, tid, handle, length, cap = HDR.unpack(val.raw[:HDR.size])
+            out.append({"pid": pid, "tid": tid, "handle": handle, "len": length, "cap": cap,
+                        "data": val.raw[HDR.size:HDR.size + cap]})
+        return out
 
     def close(self):
         for fd in self.perf_fds:
             os.close(fd)
         os.close(self.writes)
+        os.close(self.writes_q)
         os.close(self.maps.get("scratch", -1)) if self.maps.get("scratch", -1) >= 0 else None
         os.close(self.prog)

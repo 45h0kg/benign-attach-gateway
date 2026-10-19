@@ -64,7 +64,8 @@ The adversarial suite (`tests/test_escrow.py`) exercises each goal; the check ID
 
 - Escrow does not decide *whether* a connection is acceptable — that is the policy’s job (replaceable).
 - It does not defend against an adversary who has escaped the pod or holds root on the node.
-- It does not inspect traffic on a released connection beyond the one-time first-byte / content check.
+- Without the content gate it does not inspect traffic on a released connection beyond the first bytes; with the
+  stream gate every write on a content-gated connection is scored, but only its first 2 KiB.
 - It does not provide confidentiality for the traffic (that is TLS’s job) and, in pass-through mode, does not
   terminate TLS.
 - It is not a replacement for NetworkPolicy or a service mesh; it composes with them, adding a per-connection,
@@ -75,7 +76,7 @@ The adversarial suite (`tests/test_escrow.py`) exercises each goal; the check ID
 - An attacker with **root on the node** can detach the programs or read keys; a production deployment pairs
   escrow with attestation of the loaded program set (roadmap).
 - **Data-only reuse** of an already-released connection is out of scope: escrow controls the opening of a
-  connection and (with the content gate) its first application record, not the full stream.
+  connection; the stream gate extends this to every write on a content-gated connection (first 2 KiB of each).
 - **Encrypted content to an allowed destination:** the connection gate decides on destination + identity; the
   content gate adds content inspection without terminating for shared OpenSSL, static OpenSSL/BoringSSL and Go
   `crypto/tls`; Rustls and stripped binaries need their own probe targets, and a covert channel inside otherwise-allowed traffic is not addressed by the

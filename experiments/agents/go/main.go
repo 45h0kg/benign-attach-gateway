@@ -1,11 +1,13 @@
-// A minimal Go "agent": makes two HTTPS requests over crypto/tls, verifying the server
-// certificate, exactly like the Python client in tls_gate_demo.py. Nothing in it knows
-// about escrow; the uprobe on crypto/tls.(*Conn).Write sees its plaintext.
+// A minimal Go "agent": ONE HTTPS connection over crypto/tls (server certificate verified),
+// a benign GET followed by an exfiltration POST on the same keep-alive connection -- the
+// exact reuse a first-record gate cannot see. Nothing in it knows about escrow; the uprobe on
+// crypto/tls.(*Conn).Write sees every plaintext write.
 //
 // usage: go_agent <relay_port> <ca.pem> <delay_seconds>
 package main
 
 import (
+	"bytes"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -24,32 +26,34 @@ func main() {
 	pool := x509.NewCertPool()
 	pool.AppendCertsFromPEM(ca)
 	reqs := []string{
-		"GET /v1/items HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n",
-		"POST /transfer HTTP/1.1\r\nHost: localhost\r\nContent-Length: 28\r\nConnection: close\r\n\r\nSECRET_CARD=4111111111111111",
+		"GET /v1/items HTTP/1.1\r\nHost: localhost\r\nConnection: keep-alive\r\n\r\n",
+		"POST /transfer HTTP/1.1\r\nHost: localhost\r\nContent-Length: 28\r\nConnection: keep-alive\r\n\r\nSECRET_CARD=4111111111111111",
 	}
-	for _, r := range reqs {
+	cfg := &tls.Config{RootCAs: pool, ServerName: "localhost", MaxVersion: tls.VersionTLS12}
+	conn, err := tls.Dial("tcp", "127.0.0.1:"+port, cfg)
+	if err != nil {
+		fmt.Printf("AGENT(go) connection -> BLOCKED (%v)\n", err)
+		return
+	}
+	defer conn.Close()
+	fmt.Println("AGENT(go) one TLS connection, cert OK")
+	for i, r := range reqs {
 		path := strings.Fields(r)[1]
-		cfg := &tls.Config{RootCAs: pool, ServerName: "localhost", MaxVersion: tls.VersionTLS12}
-		conn, err := tls.Dial("tcp", "127.0.0.1:"+port, cfg)
-		if err != nil {
-			fmt.Printf("AGENT(go) request %-16s -> BLOCKED (%v)\n", path, err)
-			time.Sleep(1500 * time.Millisecond)
-			continue
-		}
+		conn.SetDeadline(time.Now().Add(3 * time.Second))
 		if _, err = conn.Write([]byte(r)); err != nil {
-			fmt.Printf("AGENT(go) request %-16s -> BLOCKED (%v)\n", path, err)
-			conn.Close()
-			time.Sleep(1500 * time.Millisecond)
-			continue
+			fmt.Printf("AGENT(go) request %d %-12s -> BLOCKED (%v)\n", i+1, path, err)
+			return
 		}
+		var resp []byte
 		buf := make([]byte, 200)
-		n, err := conn.Read(buf)
-		if err != nil || n == 0 {
-			fmt.Printf("AGENT(go) request %-16s -> BLOCKED (%v)\n", path, err)
-		} else {
-			fmt.Printf("AGENT(go) request %-16s -> cert OK, server replied %q\n", path, string(buf[:min(n, 15)]))
+		for !bytes.Contains(resp, []byte("\r\n\r\nok")) {
+			n, err := conn.Read(buf)
+			if err != nil || n == 0 {
+				fmt.Printf("AGENT(go) request %d %-12s -> BLOCKED (%v)\n", i+1, path, err)
+				return
+			}
+			resp = append(resp, buf[:n]...)
 		}
-		conn.Close()
-		time.Sleep(1500 * time.Millisecond)
+		fmt.Printf("AGENT(go) request %d %-12s -> server replied %q\n", i+1, path, string(resp[:min(len(resp), 15)]))
 	}
 }

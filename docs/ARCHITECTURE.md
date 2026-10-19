@@ -16,7 +16,7 @@ deployed. For the threat model see [THREAT_MODEL.md](THREAT_MODEL.md); for the c
 | verifier | its own pod, own signing key | evaluate policy on the pod identity, return a signed verdict bound to the socket; `allow`/`deny`/`hold` |
 | registry | node agent | map cgroup path → pod identity (uid, namespace, service account, SPIFFE id) |
 | audit log | both | hash-chained, signed receipts of every decision |
-| TLS uprobe (`ssl_sniff`) + content model | node agent / verifier | optional: read plaintext at the TLS write boundary (`SSL_write` shared or static, or Go `crypto/tls.(*Conn).Write`), score it, gate content without terminating TLS |
+| TLS uprobe (`ssl_sniff`) + content model | node agent / verifier | optional: read every plaintext write at the TLS write boundary (`SSL_write` shared or static, or Go `crypto/tls.(*Conn).Write`), score each, hold each record until scored, without terminating TLS |
 
 Code map: `bpf/escrow_connect4.bpf.c`, `bpf/ssl_sniff.bpf.c`, `escrow/bpfload.py`, `escrow/tlsview.py`,
 `escrow/attribution.py`, `escrow/wire.py`, `escrow/interceptor.py`, `escrow/verifier.py`, `escrow/mlcheck.py`,

@@ -57,9 +57,11 @@ sudo bash experiments/cli_smoke.sh
 
 ```bash
 bash experiments/agents/build.sh                           # builds go_agent (Go 1.21+) and static_agent (gcc + libssl-dev static archives)
-sudo PYTHONPATH=. python3 experiments/tls_gate_demo.py all # -> results/RESULTS_TLSGATE.md, results/tls_gate_runtimes.json
-# for each of openssl / go / static: benign GET allowed end-to-end (cert verified); exfil POST denied on its
-# plaintext, server receives nothing. Pass a single runtime name instead of `all` to run one.
+sudo PYTHONPATH=. python3 experiments/tls_gate_demo.py all both # -> results/RESULTS_TLSGATE.md, results/tls_gate_runtimes.json
+# for each of openssl / go / static, one keep-alive connection (benign GET then exfil POST on the same connection):
+#   first  -> exploit confirmed: the POST reaches the server after the GET opened the connection
+#   stream -> GET allowed, POST denied mid-stream on its plaintext, server receives only the GET
+sudo PYTHONPATH=. python3 experiments/tls_gate_multirecord.py   # 40 KiB write over 3 records, then exfil: accounting
 ```
 
 Requires the uprobe PMU. The OpenSSL runtime probes `libssl.so.3`; the Go and static runtimes probe the agent

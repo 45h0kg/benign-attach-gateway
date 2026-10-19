@@ -1,7 +1,7 @@
-=== CONNECTION ESCROW: FULL REPRODUCTION RUN  2026-10-18 23:19:55 UTC  git: 9658eac
+=== CONNECTION ESCROW: FULL REPRODUCTION RUN  2026-10-19 04:13:25 UTC  git: 2613da6
 --- ENVIRONMENT ---
 Linux vm 6.18.44-fc-v139 #1 SMP PREEMPT_DYNAMIC @0 x86_64 x86_64 x86_64 GNU/Linux
-model name	: Intel(R) Xeon(R) Processor @ 2.80GHz
+model name	: Intel(R) Xeon(R) Processor @ 2.10GHz
 vCPUs: 2
 MemTotal:        8222320 kB
 Python 3.13.16
@@ -10,17 +10,17 @@ iptables v1.8.10 (nf_tables)
 cryptography 50.0.1
 
 --- STAGE 0: BUILD eBPF program ---
-start: 23:19:55 UTC
+start: 04:13:25 UTC
 instructions: 160
 stage 0 exit: 0
 
 --- STAGE 1: ADVERSARIAL SUITE, eBPF cgroup/connect4 hold point ---
-start: 23:19:55 UTC
+start: 04:13:25 UTC
 
 === hold point: bpf ===
   [PASS] T0 allowed: agent connected and got the echo
   [PASS] T0 allowed: destination accepted exactly one connection carrying the parked bytes
-  [PASS] T0 allowed: receipt RELEASED, attributed to the agent pid, pod-a cgroup and SPIFFE id  -- src=bpf_connect4 pid=314 cookie=1
+  [PASS] T0 allowed: receipt RELEASED, attributed to the agent pid, pod-a cgroup and SPIFFE id  -- src=bpf_connect4 pid=458 cookie=1
   [PASS] T0 allowed: executable identified by digest
   [PASS] T1 denied: agent's connection was reset  -- ConnectionResetError: [Errno 104] Connection reset by peer
   [PASS] T1 denied: destination never accepted a connection
@@ -28,7 +28,7 @@ start: 23:19:55 UTC
   [PASS] T2 unknown workload: (bpf) a process outside the attached cgroups is not supervised; covered under iptables
   [PASS] T3 deadline: no verdict in 1000 ms -> reset, DENIED_DEADLINE  -- 1002 ms
   [PASS] T3 deadline: destination never accepted a connection
-  [PASS] T3 deadline: agent released within 1.0-1.6 s  -- 1.06 s
+  [PASS] T3 deadline: agent released within 1.0-1.6 s  -- 1.08 s
   [PASS] T4 late verdict: a correctly signed ALLOW arriving after the deadline is refused  -- stale: escrow id not live (expired or already decided)
   [PASS] T4 late verdict: the verifier's late release did not open anything
   [PASS] T5 forged verdict (wrong key) refused  -- verdict signature invalid
@@ -44,14 +44,14 @@ start: 23:19:55 UTC
   [PASS] T8 HTTP POST /v1/: denied  -- DENY: default
   [PASS] T8 HTTP GET /admin: denied  -- DENY: default
   [PASS] T9 budget 2/min for pod-b: third connection denied  -- ['RELEASED', 'RELEASED', 'DENIED']
-  [PASS] T10 hold -> operator allow within deadline: released  -- released:c49ef6267851f593
-  [PASS] T10 hold -> operator deny: reset  -- DENY: refused:5f8cbde6df330f5b
+  [PASS] T10 hold -> operator allow within deadline: released  -- released:ef1152d991f05ec2
+  [PASS] T10 hold -> operator deny: reset  -- DENY: refused:901829047a20f025
   [PASS] T11 child process inherits the hold point: denied, destination untouched  -- DENY: default
   [PASS] T11 renamed binary: still attributed to pod-a by cgroup; digest equals the real interpreter  -- not-python
   [PASS] T14 UDP: queries to a public resolver and UDP exfil refused in-kernel (EPERM); cluster resolver allowed  -- {'public_dns': 'PermissionError: [Errno 1] Operation not permitted', 'resolver': 'sent', 'udp_exfil': 'PermissionError: [Errno 1] Operation not permitted'}
   [PASS] T14 DNS over TCP to a public resolver: escrowed and refused  -- DENY: default
   [PASS] T14 kernel counters: udp_denied >= 2, udp_allowed >= 1  -- {'tcp_held': 17, 'udp_allowed': 1, 'udp_denied': 2, 'other_denied': 0}
-  [PASS] T12 verifier unreachable: allowed destination still refused (fail closed)  -- [Errno 111] Connect call failed ('127.0.0.1', 45797)
+  [PASS] T12 verifier unreachable: allowed destination still refused (fail closed)  -- [Errno 111] Connect call failed ('127.0.0.1', 55327)
   [PASS] T13 interceptor and verifier audit chains verify  -- 18 / 17 entries
   [PASS] T13 tampered receipt breaks the chain at that entry
 
@@ -60,12 +60,12 @@ interceptor stats: {"bpf": {"RELEASED": 7, "DENIED": 9, "DENIED_DEADLINE": 1, "D
 stage 1 exit: 0
 
 --- STAGE 2: ADVERSARIAL SUITE, iptables REDIRECT hold point ---
-start: 23:19:59 UTC
+start: 04:13:29 UTC
 
 === hold point: iptables ===
   [PASS] T0 allowed: agent connected and got the echo
   [PASS] T0 allowed: destination accepted exactly one connection carrying the parked bytes
-  [PASS] T0 allowed: receipt RELEASED, attributed to the agent pid, pod-a cgroup and SPIFFE id  -- src=so_original_dst pid=366 cookie=12
+  [PASS] T0 allowed: receipt RELEASED, attributed to the agent pid, pod-a cgroup and SPIFFE id  -- src=so_original_dst pid=515 cookie=5
   [PASS] T0 allowed: executable identified by digest
   [PASS] T1 denied: agent's connection was reset  -- ConnectionResetError: [Errno 104] Connection reset by peer
   [PASS] T1 denied: destination never accepted a connection
@@ -89,12 +89,12 @@ start: 23:19:59 UTC
   [PASS] T8 HTTP POST /v1/: denied  -- DENY: default
   [PASS] T8 HTTP GET /admin: denied  -- DENY: default
   [PASS] T9 budget 2/min for pod-b: third connection denied  -- ['RELEASED', 'RELEASED', 'DENIED']
-  [PASS] T10 hold -> operator allow within deadline: released  -- released:d04c98b1df7dc44b
-  [PASS] T10 hold -> operator deny: reset  -- DENY: refused:d760a5ed8295009e
+  [PASS] T10 hold -> operator allow within deadline: released  -- released:f0e1d80d760f43e1
+  [PASS] T10 hold -> operator deny: reset  -- DENY: refused:257d674e4686889c
   [PASS] T11 child process inherits the hold point: denied, destination untouched  -- DENY: default
   [PASS] T11 renamed binary: still attributed to pod-a by cgroup; digest equals the real interpreter  -- not-python
   [PASS] T14 UDP pinning needs the kernel path; not applicable to iptables
-  [PASS] T12 verifier unreachable: allowed destination still refused (fail closed)  -- [Errno 111] Connect call failed ('127.0.0.1', 36399)
+  [PASS] T12 verifier unreachable: allowed destination still refused (fail closed)  -- [Errno 111] Connect call failed ('127.0.0.1', 49641)
   [PASS] T13 interceptor and verifier audit chains verify  -- 18 / 17 entries
   [PASS] T13 tampered receipt breaks the chain at that entry
 
@@ -103,71 +103,124 @@ interceptor stats: {"iptables": {"RELEASED": 7, "DENIED": 9, "DENIED_DEADLINE": 
 stage 2 exit: 0
 
 --- STAGE 3: LATENCY, native Ed25519 (cryptography) if available ---
-start: 23:20:03 UTC
-[bpf] baseline agent total 825 us | supervised 5806 us (p95 8589) | hold 4522 us = attribution 900 + peek 93 + verdict rtt 2383 (verifier decide 24) + gate 328 + upstream 411 | 16-way: hold 41972 us, 175.5 conn/s, procs 71
-[iptables] baseline agent total 882 us | supervised 6699 us (p95 9628) | hold 5460 us = attribution 1855 + peek 90 + verdict rtt 2297 (verifier decide 24) + gate 337 + upstream 417 | 16-way: hold 76564 us, 72.7 conn/s, procs 72
+start: 04:13:33 UTC
+[bpf] baseline agent total 628 us | supervised 4768 us (p95 6798) | hold 3727 us = attribution 746 + peek 74 + verdict rtt 1960 (verifier decide 21) + gate 282 + upstream 393 | 16-way: hold 38786 us, 187.3 conn/s, procs 69
+[iptables] baseline agent total 915 us | supervised 5875 us (p95 7915) | hold 4759 us = attribution 1563 + peek 75 + verdict rtt 2054 (verifier decide 23) + gate 282 + upstream 487 | 16-way: hold 60114 us, 130.8 conn/s, procs 71
 stage 3 exit: 0
 
 --- STAGE 4: LATENCY, pure-Python Ed25519 ---
-start: 23:20:49 UTC
-[bpf] baseline agent total 834 us | supervised 10130 us (p95 13955) | hold 8835 us = attribution 854 + peek 88 + verdict rtt 3757 (verifier decide 22) + gate 3155 + upstream 583 | 16-way: hold 88966 us, 93.3 conn/s, procs 72
-[iptables] baseline agent total 830 us | supervised 11082 us (p95 14956) | hold 9785 us = attribution 1823 + peek 91 + verdict rtt 3714 (verifier decide 23) + gate 3126 + upstream 591 | 16-way: hold 121307 us, 75.7 conn/s, procs 72
+start: 04:14:13 UTC
+[bpf] baseline agent total 624 us | supervised 8824 us (p95 11270) | hold 7795 us = attribution 688 + peek 65 + verdict rtt 3337 (verifier decide 20) + gate 2929 + upstream 436 | 16-way: hold 80767 us, 105.5 conn/s, procs 71
+[iptables] baseline agent total 695 us | supervised 9278 us (p95 12259) | hold 8283 us = attribution 1453 + peek 65 + verdict rtt 3186 (verifier decide 20) + gate 2829 + upstream 437 | 16-way: hold 99274 us, 86.7 conn/s, procs 71
 stage 4 exit: 0
 
 --- STAGE 5: CLI END-TO-END (curl as the agent) ---
-start: 23:21:38 UTC
+start: 04:14:57 UTC
 curl (supervised) -> 127.0.0.1:18080 : ok from 18080
 curl (supervised) -> verifier 18443 : exit=56 (56 = connection reset, expected)
 curl (supervised) -> 127.0.0.1:18443 via explicit path again, now from a child shell: RESET
-attached connect4/sendmsg4/sockops to /sys/fs/cgroup/unified/escrow-cli-3858
+attached connect4/sendmsg4/sockops to /sys/fs/cgroup/unified/escrow-cli-3974
 kernel hold point -> 127.0.0.1:15001; UDP pinned to None
 interceptor on ('127.0.0.1', 15001) x1 workers, verifier 127.0.0.1:18443, deadline 2000 ms
-receipt: RELEASED rule[0] {'ip': '127.0.0.1', 'port': 18080, 'source': 'bpf_connect4'} comm=curl pid=3877 cookie=812
-receipt: DENIED DENY: destination_is_verifier {'ip': '127.0.0.1', 'port': 18443, 'source': 'bpf_connect4'} comm=curl pid=3880 cookie=4910
-receipt: DENIED DENY: destination_is_verifier {'ip': '127.0.0.1', 'port': 18443, 'source': 'bpf_connect4'} comm=curl pid=3883 cookie=813
+receipt: RELEASED rule[0] {'ip': '127.0.0.1', 'port': 18080, 'source': 'bpf_connect4'} comm=curl pid=3992 cookie=4875
+receipt: DENIED DENY: destination_is_verifier {'ip': '127.0.0.1', 'port': 18443, 'source': 'bpf_connect4'} comm=curl pid=3995 cookie=4876
+receipt: DENIED DENY: destination_is_verifier {'ip': '127.0.0.1', 'port': 18443, 'source': 'bpf_connect4'} comm=curl pid=3998 cookie=4877
 stage 5 exit: 0
 
---- STAGE 6: CONTENT GATE (TLS plaintext via uprobe + ML, no termination) -- OpenSSL shared, Go crypto/tls, static OpenSSL ---
-start: 23:21:39 UTC
+--- STAGE 6: CONTENT GATE (TLS plaintext via uprobe + ML, no termination) -- first-record vs stream gate; OpenSSL shared, Go crypto/tls, static OpenSSL ---
+start: 04:14:59 UTC
 experiments/agents/build.sh: line 5: go: command not found
 stage 6 build exit: 127
-=== runtime openssl: uprobe on SSL_write, SSL_write_ex in libssl.so.3, agent pid=3899 (2 probe(s)); relay :45577 -> server :51895
-    TLS is end-to-end to the real server; the relay and the probe hold NO key.
+=== runtime openssl, gate first: uprobe on SSL_write, SSL_write_ex in libssl.so.3, agent pid=4014 (2 probe(s)); relay :43751 -> server :54315
+    one keep-alive TLS connection: benign GET, then exfil POST on the same connection
     agent saw:
-      AGENT request /v1/items        -> cert OK, server replied b'HTTP/1.0 200 OK'
-      AGENT request /transfer        -> BLOCKED (ConnectionResetError: [Errno 104] Connection reset by peer)
-    content gate decisions (on plaintext captured from inside TLS):
-      ALLOW p=0.001  GET /v1/items HTTP/1.1   reasons=[]
-      DENY  p=0.999  POST /transfer HTTP/1.1   reasons=['sensitive_kw', 'pan_like', 'sensitive_path', 'mutating']
+      AGENT one TLS connection, cert OK
+      AGENT request 1 /v1/items    -> server replied b'HTTP/1.1 200 OK'
+      AGENT request 2 /transfer    -> server replied b'HTTP/1.1 200 OK'
+    gate decisions (on plaintext captured from inside TLS):
+      record 1: ALLOW p=0.001  GET /v1/items HTTP/1.1   reasons=[]
     what the REAL server actually received:
       /v1/items  body=''
-    RESULT openssl: PASS -- benign allowed end-to-end, exfil denied on plaintext, server received only the benign request
+      /transfer  body='SECRET_CARD=4111111111111111'
+    RESULT openssl/first: EXPLOIT CONFIRMED -- first-record gate saw only the GET; the exfil POST rode the released connection to the server
 
-=== runtime go: uprobe on crypto/tls.(*Conn).Write in go_agent, agent pid=3904 (1 probe(s)); relay :46031 -> server :59539
-    TLS is end-to-end to the real server; the relay and the probe hold NO key.
+=== runtime openssl, gate stream: uprobe on SSL_write, SSL_write_ex in libssl.so.3, agent pid=4019 (2 probe(s)); relay :46673 -> server :43145
+    one keep-alive TLS connection: benign GET, then exfil POST on the same connection
     agent saw:
-      AGENT(go) request /v1/items        -> cert OK, server replied "HTTP/1.0 200 OK"
-      AGENT(go) request /transfer        -> BLOCKED (read tcp 127.0.0.1:47824->127.0.0.1:46031: read: connection reset by peer)
-    content gate decisions (on plaintext captured from inside TLS):
-      ALLOW p=0.001  GET /v1/items HTTP/1.1   reasons=[]
-      DENY  p=0.999  POST /transfer HTTP/1.1   reasons=['sensitive_kw', 'pan_like', 'sensitive_path', 'mutating']
+      AGENT one TLS connection, cert OK
+      AGENT request 1 /v1/items    -> server replied b'HTTP/1.1 200 OK'
+      AGENT request 2 /transfer    -> BLOCKED (ConnectionResetError)
+    gate decisions (on plaintext captured from inside TLS):
+      record 1: ALLOW p=0.001  GET /v1/items HTTP/1.1   reasons=[]
+      record 2: DENY  p=0.999  POST /transfer HTTP/1.1   reasons=['sensitive_kw', 'pan_like', 'sensitive_path', 'mutating']
     what the REAL server actually received:
       /v1/items  body=''
-    RESULT go: PASS -- benign allowed end-to-end, exfil denied on plaintext, server received only the benign request
+    RESULT openssl/stream: PASS -- benign allowed, exfil on the same connection denied mid-stream on its plaintext, server received only the benign request
 
-=== runtime static: uprobe on SSL_write, SSL_write_ex in static_agent, agent pid=3913 (2 probe(s)); relay :39957 -> server :49787
-    TLS is end-to-end to the real server; the relay and the probe hold NO key.
+=== runtime go, gate first: uprobe on crypto/tls.(*Conn).Write in go_agent, agent pid=4025 (1 probe(s)); relay :35565 -> server :56455
+    one keep-alive TLS connection: benign GET, then exfil POST on the same connection
     agent saw:
-      AGENT(static) request /v1/items        -> cert OK, server replied 'HTTP/1.0 200 OK'
-      AGENT(static) request /transfer        -> BLOCKED (reset)
-    content gate decisions (on plaintext captured from inside TLS):
-      ALLOW p=0.001  GET /v1/items HTTP/1.1   reasons=[]
-      DENY  p=0.999  POST /transfer HTTP/1.1   reasons=['sensitive_kw', 'pan_like', 'sensitive_path', 'mutating']
+      AGENT(go) one TLS connection, cert OK
+      AGENT(go) request 1 /v1/items    -> server replied "HTTP/1.1 200 OK"
+      AGENT(go) request 2 /transfer    -> server replied "HTTP/1.1 200 OK"
+    gate decisions (on plaintext captured from inside TLS):
+      record 1: ALLOW p=0.001  GET /v1/items HTTP/1.1   reasons=[]
     what the REAL server actually received:
       /v1/items  body=''
-    RESULT static: PASS -- benign allowed end-to-end, exfil denied on plaintext, server received only the benign request
+      /transfer  body='SECRET_CARD=4111111111111111'
+    RESULT go/first: EXPLOIT CONFIRMED -- first-record gate saw only the GET; the exfil POST rode the released connection to the server
 
-3/3 runtimes pass; written /home/claude/benign-attach-gateway/results/tls_gate_runtimes.json
+=== runtime go, gate stream: uprobe on crypto/tls.(*Conn).Write in go_agent, agent pid=4033 (1 probe(s)); relay :40003 -> server :40965
+    one keep-alive TLS connection: benign GET, then exfil POST on the same connection
+    agent saw:
+      AGENT(go) one TLS connection, cert OK
+      AGENT(go) request 1 /v1/items    -> server replied "HTTP/1.1 200 OK"
+      AGENT(go) request 2 /transfer    -> BLOCKED (read tcp 127.0.0.1:41212->127.0.0.1:40003: read: connection reset by peer)
+    gate decisions (on plaintext captured from inside TLS):
+      record 1: ALLOW p=0.001  GET /v1/items HTTP/1.1   reasons=[]
+      record 2: DENY  p=0.999  POST /transfer HTTP/1.1   reasons=['sensitive_kw', 'pan_like', 'sensitive_path', 'mutating']
+    what the REAL server actually received:
+      /v1/items  body=''
+    RESULT go/stream: PASS -- benign allowed, exfil on the same connection denied mid-stream on its plaintext, server received only the benign request
+
+=== runtime static, gate first: uprobe on SSL_write, SSL_write_ex in static_agent, agent pid=4041 (2 probe(s)); relay :43777 -> server :54387
+    one keep-alive TLS connection: benign GET, then exfil POST on the same connection
+    agent saw:
+      AGENT(static) one TLS connection, cert OK
+      AGENT(static) request 1 /v1/items    -> server replied 'HTTP/1.1 200 OK'
+      AGENT(static) request 2 /transfer    -> server replied 'HTTP/1.1 200 OK'
+    gate decisions (on plaintext captured from inside TLS):
+      record 1: ALLOW p=0.001  GET /v1/items HTTP/1.1   reasons=[]
+    what the REAL server actually received:
+      /v1/items  body=''
+      /transfer  body='SECRET_CARD=4111111111111111'
+    RESULT static/first: EXPLOIT CONFIRMED -- first-record gate saw only the GET; the exfil POST rode the released connection to the server
+
+=== runtime static, gate stream: uprobe on SSL_write, SSL_write_ex in static_agent, agent pid=4052 (2 probe(s)); relay :43817 -> server :59729
+    one keep-alive TLS connection: benign GET, then exfil POST on the same connection
+    agent saw:
+      AGENT(static) one TLS connection, cert OK
+      AGENT(static) request 1 /v1/items    -> server replied 'HTTP/1.1 200 OK'
+      AGENT(static) request 2 /transfer    -> BLOCKED (reset)
+    gate decisions (on plaintext captured from inside TLS):
+      record 1: ALLOW p=0.001  GET /v1/items HTTP/1.1   reasons=[]
+      record 2: DENY  p=0.999  POST /transfer HTTP/1.1   reasons=['sensitive_kw', 'pan_like', 'sensitive_path', 'mutating']
+    what the REAL server actually received:
+      /v1/items  body=''
+    RESULT static/stream: PASS -- benign allowed, exfil on the same connection denied mid-stream on its plaintext, server received only the benign request
+
+6/6 runs as expected; written /home/claude/benign-attach-gateway/results/tls_gate_runtimes.json
 stage 6 exit: 0
 
-RUN COMPLETE 2026-10-18 23:22:04 UTC
+--- STAGE 7: STREAM GATE ACCOUNTING (one write over several TLS records, then exfil) ---
+start: 04:15:27 UTC
+=== stream gate, one write spanning several records (OpenSSL/Python agent)
+      AGENT request 1 (40076 bytes, one write) -> server replied b'HTTP/1.1 200 OK'
+      AGENT request 2 -> BLOCKED (ConnectionResetError)
+      record 1: ALLOW p=0.001  GET /v1/items HTTP/1.1
+      record 4: DENY  p=0.999  POST /transfer HTTP/1.1
+      server received: [('/v1/items', 0)]
+    RESULT multirecord: PASS -- 3 records released as one scored write; the next record was recognised as a new write and denied
+stage 7 exit: 0
+
+RUN COMPLETE 2026-10-19 04:15:31 UTC

@@ -10,7 +10,7 @@ Start with the top-level [`../README.md`](../README.md), then:
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Components, data flow for one connection, the three kernel programs, the attribution join, the verifier and policy, the release gate, receipts, and deployment. |
 | [THREAT_MODEL.md](THREAT_MODEL.md) | Assets, trusted computing base, adversary capabilities, the six goals (G1–G6) and how each is met, non-goals, residual risk. |
 | [DESIGN.md](DESIGN.md) | The connection gate in depth: the hold point, release-gate conditions, hold-and-release with a deadline. |
-| [TLS_GATE.md](TLS_GATE.md) | The content gate: reading plaintext via an `SSL_write` uprobe, holding the first application record, what is and isn’t novel, TLS 1.3, scope and limitations. |
+| [TLS_GATE.md](TLS_GATE.md) | The content gate: reading every plaintext write via a TLS-write uprobe, holding each record until its write is scored (stream gate), what is and isn’t novel, TLS 1.3, scope and limitations. |
 | [REPRODUCE.md](REPRODUCE.md) | Step-by-step reproduction of every result (adversarial suite, microbenchmark, content gate, Kubernetes). |
 
 ## Mental model in three sentences

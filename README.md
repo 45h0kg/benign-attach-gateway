@@ -126,15 +126,21 @@ proxy (which holds a key and breaks end-to-end), we read the plaintext at the ag
   plaintext buffer *before* it is encrypted, and copies it into a kernel map. The TLS session is untouched — it
   completes end-to-end to the real server, which presents its real certificate, and the agent validates it. The
   enforcer never holds a key and never decrypts the wire.
-- The interceptor forwards the handshake untouched, then **holds the first application-data record** until a
-  verdict on the captured plaintext. A content model (`escrow/mlcheck.py`, a deterministic logistic-regression
-  **placeholder**) scores the request; `allow` releases it end-to-end, `deny` resets before the server sees it.
+- Every write is captured in order, with the TLS handle it was made on, into a kernel FIFO. The interceptor
+  forwards the handshake untouched, then **holds every outgoing application-data record until the write that
+  produced it has been scored** (the *stream gate*). A content model (`escrow/mlcheck.py`, a deterministic
+  logistic-regression **placeholder**) scores each write; `allow` releases its records end-to-end, `deny` resets
+  mid-stream and the record never leaves. No plaintext for a held record → deny (fail closed). A second request
+  on a kept-alive connection, or the tail of a long body, is therefore gated like the first; the simpler
+  *first-record gate* is kept in the demo to show the keep-alive exploit it is blind to.
 
 ```bash
 bash experiments/agents/build.sh                            # Go + static-OpenSSL agents (needs go, gcc, libssl-dev)
-sudo PYTHONPATH=. python3 experiments/tls_gate_demo.py all   # openssl | go | static | all
-# benign  GET  /v1/items  -> cert OK, allowed end-to-end, server receives it
-# exfil   POST /transfer  -> denied on its plaintext (p=0.999), connection reset, server receives nothing
+sudo PYTHONPATH=. python3 experiments/tls_gate_demo.py all both   # runtime: openssl|go|static|all; gate: first|stream|both
+# one keep-alive TLS connection per run: benign GET /v1/items, then exfil POST /transfer on the SAME connection
+#   first-record gate: GET allowed ... POST rides the released connection to the server (exploit confirmed)
+#   stream gate:       GET allowed, POST denied on its plaintext (p=0.999) mid-stream, server receives only the GET
+sudo PYTHONPATH=. python3 experiments/tls_gate_multirecord.py          # one 40 KiB write over 3 records, then exfil: accounting check
 ```
 
 Capturing TLS plaintext via uprobes is known from observability tools (e.g. AgentSight); they **observe**. The
@@ -165,7 +171,7 @@ sudo bash experiments/cli_smoke.sh
 
 # content gate: TLS plaintext via uprobe + ML, no termination
 bash experiments/agents/build.sh                            # Go + static-OpenSSL agents (needs go, gcc, libssl-dev)
-sudo PYTHONPATH=. python3 experiments/tls_gate_demo.py all   # openssl | go | static | all
+sudo PYTHONPATH=. python3 experiments/tls_gate_demo.py all both
 
 # everything, logged
 sudo bash experiments/run_all.sh        # -> results/execution_log.txt
@@ -208,9 +214,10 @@ All numbers come from logged runs (`results/`).
   its SPIFFE identity; the exfil destination receives nothing while the allowed service is reached; a raw socket
   that **bypasses a comparison sidecar proxy** is **held by escrow**; 6 pods × 100 connections (600) are all
   gated at ~59 conn/s. See `results/RESULTS_K8S.md`.
-- **Content gate (OpenSSL shared, Go `crypto/tls`, static OpenSSL — same gate, three probe placements):** an
-  exfil POST is denied on its captured plaintext and never reaches the server, while a
-  benign request completes on a certificate-verified end-to-end TLS connection; the enforcer holds no key. See
+- **Content gate (OpenSSL shared, Go `crypto/tls`, static OpenSSL — same gate, three probe placements):** on one
+  keep-alive TLS connection, a benign GET is allowed and an exfil POST on the same connection is denied mid-stream
+  on its captured plaintext; the server receives only the GET and the enforcer holds no key. The first-record
+  gate, run against the same agent, lets the POST through — the exploit is demonstrated, then closed. See
   `results/RESULTS_TLSGATE.md`.
 
 ---
@@ -235,7 +242,8 @@ tests/                     harness (real cgroups/sockets/uids) + 36-check advers
 bench/bench.py             latency breakdown, baseline, concurrency
 experiments/
   cli_smoke.sh             curl as the agent, end to end
-  tls_gate_demo.py         content gate: plaintext via uprobe + ML, no TLS termination (3 runtimes)
+  tls_gate_demo.py         content gate: first-record vs stream gate, 3 TLS runtimes, keep-alive exploit
+  tls_gate_multirecord.py  stream-gate accounting: one write spanning several TLS records
   agents/                  Go and statically-linked OpenSSL agent clients for the content gate
   run_all.sh               one-command reproduction (stages 0–6) -> results/execution_log.txt
   k8s/                     on-cluster drivers: build_image, drive, bypass, scale + manifests
@@ -284,9 +292,14 @@ How each goal is met is spelled out in **[`docs/THREAT_MODEL.md`](docs/THREAT_MO
   resolver), not escrowed for a verdict.
 - The prototype interceptor is a single Python process; the content model is a deterministic placeholder; both
   are replaceable and are not the contribution.
-- The content gate correlates plaintext to a connection by writing task (`pid_tgid`) and decides on the first
-  application record only; an agent multiplexing TLS sessions on one thread needs the `SSL*`/`*tls.Conn` handle
-  as the key (readable by the uprobe, not wired).
+- The stream gate binds a connection to its TLS handle from the first write by arrival order; two sessions in one
+  process whose first writes interleave can be mis-bound for that first write. Binding by `SSL_get_fd`/socket
+  cookie is the next step. 2 KiB of each write is captured for scoring; HTTP/2 HEADERS frames are HPACK-compressed
+  and need a decoder in the model.
+- The content gate's adversary is hostile *input* to an honest agent. Against hostile *code* (own TLS, stripped
+  symbols, inlined encryption) the probe sees nothing and the gate fails closed — the agent loses TLS egress rather
+  than gaining a channel — but a decoy write or a buffer race is possible for such an adversary. The connection
+  gate, in the kernel, holds against hostile code.
 - Fully-managed node tiers (GKE Autopilot, AKS virtual nodes) are unsupported by design (no node access).
 
 ---

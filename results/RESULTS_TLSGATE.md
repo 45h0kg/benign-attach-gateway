@@ -1,47 +1,46 @@
-# Content-gate result (TLS, no termination)
+# Content-gate results (TLS, no termination)
 
-One logged run of `experiments/tls_gate_demo.py` (Linux 6.18, OpenSSL 3.0, TLS 1.2, eBPF uprobe on SSL_write/SSL_write_ex, logistic-regression content model).
+One logged run of `experiments/tls_gate_demo.py all both` (`tls_gate_runtimes.json`): three TLS runtimes, two gates, one
+keep-alive TLS connection per run carrying a benign `GET /v1/items` and then an exfiltration `POST /transfer` on the **same**
+connection. The agent verified the real server certificate in every run; the relay and the probe held no key.
 
-```
-uprobe on agent pid=699: 2 function(s); relay :43243 -> server :51095
-TLS is end-to-end to the real server; the relay and the probe hold NO key.
+| Runtime | Probe placed in | Gate | GET (record 1) | POST (same connection) | Server received | Outcome |
+|---|---|---|---|---|---|---|
+| openssl | `libssl.so.3` | first | allow p=0.001 | **not inspected** (spliced) | `/v1/items, /transfer` | exfil reached the server -- **exploit confirmed** |
+| openssl | `libssl.so.3` | stream | allow p=0.001 | deny p=0.999 (record 2) | `/v1/items` | exfil denied mid-stream, connection reset |
+| go | `go_agent` | first | allow p=0.001 | **not inspected** (spliced) | `/v1/items, /transfer` | exfil reached the server -- **exploit confirmed** |
+| go | `go_agent` | stream | allow p=0.001 | deny p=0.999 (record 2) | `/v1/items` | exfil denied mid-stream, connection reset |
+| static | `static_agent` | first | allow p=0.001 | **not inspected** (spliced) | `/v1/items, /transfer` | exfil reached the server -- **exploit confirmed** |
+| static | `static_agent` | stream | allow p=0.001 | deny p=0.999 (record 2) | `/v1/items` | exfil denied mid-stream, connection reset |
 
-AGENT request /v1/items        -> cert OK, server replied b'HTTP/1.0 200 OK'
-AGENT request /transfer        -> BLOCKED (ConnectionResetError: [Errno 104] Connection reset by peer)
-
---- content gate decisions (on plaintext captured from inside TLS) ---
-  ALLOW p=0.001  GET /v1/items HTTP/1.1   reasons=[]
-  DENY  p=0.999  POST /transfer HTTP/1.1   reasons=['sensitive_kw', 'pan_like', 'sensitive_path', 'mutating']
-
---- what the REAL server actually received ---
-  /v1/items  body=''
-
-Result: the exfil POST was denied on its plaintext content and never reached the server,
-yet both connections used real end-to-end TLS (the agent verified the server's cert).
-```
-
-The agent's TLS cert validation succeeded (`cert OK`), proving the real server's certificate reached it end-to-end through a relay that holds no key; the exfil request was denied on its captured plaintext and never reached the server.
-
-## Three TLS runtimes through the same gate
-
-One logged run of `experiments/tls_gate_demo.py all` (`results/tls_gate_runtimes.json`). The relay, model and gate are the same; only the uprobe placement differs.
-
-| Runtime | Probe placed in | Symbol(s) | Benign GET | Exfil POST | Server received |
-|---|---|---|---|---|---|
-| openssl | `libssl.so.3` | `SSL_write`, `SSL_write_ex` | allow p=0.001 | deny p=0.999 | `/v1/items` |
-| go | `go_agent` | `crypto/tls.(*Conn).Write` | allow p=0.001 | deny p=0.999 | `/v1/items` |
-| static | `static_agent` | `SSL_write`, `SSL_write_ex` | allow p=0.001 | deny p=0.999 | `/v1/items` |
-
-All three: the agent verified the real server certificate (end-to-end TLS, no key at the relay), the benign request completed, the exfiltration request was denied on its captured plaintext and the server received nothing of it.
+The first-record gate is the form first described; the stream gate holds every record until the write that produced it is
+scored, so a second request on a kept-alive connection, or the tail of a long body, is gated like the first.
+`experiments/tls_gate_multirecord.py` checks the record/write accounting: a 40 KiB write released as three records on one
+verdict, the fourth record recognised as a new write and denied.
 
 ```
-=== runtime openssl: probe in libssl.so.3 on SSL_write, SSL_write_ex
-  AGENT request /v1/items        -> cert OK, server replied b'HTTP/1.0 200 OK'
-  AGENT request /transfer        -> BLOCKED (ConnectionResetError: [Errno 104] Connection reset by peer)
-=== runtime go: probe in go_agent on crypto/tls.(*Conn).Write
-  AGENT(go) request /v1/items        -> cert OK, server replied "HTTP/1.0 200 OK"
-  AGENT(go) request /transfer        -> BLOCKED (read tcp 127.0.0.1:37098->127.0.0.1:33725: read: connection reset by peer)
-=== runtime static: probe in static_agent on SSL_write, SSL_write_ex
-  AGENT(static) request /v1/items        -> cert OK, server replied 'HTTP/1.0 200 OK'
-  AGENT(static) request /transfer        -> BLOCKED (reset)
+=== openssl / first: probe in libssl.so.3 on SSL_write, SSL_write_ex
+  AGENT one TLS connection, cert OK
+  AGENT request 1 /v1/items    -> server replied b'HTTP/1.1 200 OK'
+  AGENT request 2 /transfer    -> server replied b'HTTP/1.1 200 OK'
+=== openssl / stream: probe in libssl.so.3 on SSL_write, SSL_write_ex
+  AGENT one TLS connection, cert OK
+  AGENT request 1 /v1/items    -> server replied b'HTTP/1.1 200 OK'
+  AGENT request 2 /transfer    -> BLOCKED (ConnectionResetError)
+=== go / first: probe in go_agent on crypto/tls.(*Conn).Write
+  AGENT(go) one TLS connection, cert OK
+  AGENT(go) request 1 /v1/items    -> server replied "HTTP/1.1 200 OK"
+  AGENT(go) request 2 /transfer    -> server replied "HTTP/1.1 200 OK"
+=== go / stream: probe in go_agent on crypto/tls.(*Conn).Write
+  AGENT(go) one TLS connection, cert OK
+  AGENT(go) request 1 /v1/items    -> server replied "HTTP/1.1 200 OK"
+  AGENT(go) request 2 /transfer    -> BLOCKED (read tcp 127.0.0.1:34130->127.0.0.1:33623: read: connection reset by peer)
+=== static / first: probe in static_agent on SSL_write, SSL_write_ex
+  AGENT(static) one TLS connection, cert OK
+  AGENT(static) request 1 /v1/items    -> server replied 'HTTP/1.1 200 OK'
+  AGENT(static) request 2 /transfer    -> server replied 'HTTP/1.1 200 OK'
+=== static / stream: probe in static_agent on SSL_write, SSL_write_ex
+  AGENT(static) one TLS connection, cert OK
+  AGENT(static) request 1 /v1/items    -> server replied 'HTTP/1.1 200 OK'
+  AGENT(static) request 2 /transfer    -> BLOCKED (reset)
 ```
