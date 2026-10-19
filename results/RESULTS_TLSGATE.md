@@ -14,9 +14,10 @@ connection. The agent verified the real server certificate in every run; the rel
 | static | `static_agent` | stream | allow p=0.001 | deny p=0.999 (record 2) | `/v1/items` | exfil denied mid-stream, connection reset |
 
 The first-record gate is the form first described; the stream gate holds every record until the write that produced it is
-scored, so a second request on a kept-alive connection, or the tail of a long body, is gated like the first.
-`experiments/tls_gate_multirecord.py` checks the record/write accounting: a 40 KiB write released as three records on one
-verdict, the fourth record recognised as a new write and denied.
+scored, so a second request on a kept-alive connection, or the tail of a long body, is gated like the first. Each write is
+matched to its connection by resolving the TLS session handle to the writing socket's local port, so concurrent sessions in
+one process are disambiguated (`experiments/tls_gate_concurrent.py`). `experiments/tls_gate_multirecord.py` checks the
+record/write accounting: a 40 KiB write released as three records on one verdict, the fourth record a new write, denied.
 
 ```
 === openssl / first: probe in libssl.so.3 on SSL_write, SSL_write_ex
@@ -34,7 +35,7 @@ verdict, the fourth record recognised as a new write and denied.
 === go / stream: probe in go_agent on crypto/tls.(*Conn).Write
   AGENT(go) one TLS connection, cert OK
   AGENT(go) request 1 /v1/items    -> server replied "HTTP/1.1 200 OK"
-  AGENT(go) request 2 /transfer    -> BLOCKED (read tcp 127.0.0.1:34130->127.0.0.1:33623: read: connection reset by peer)
+  AGENT(go) request 2 /transfer    -> BLOCKED (read tcp 127.0.0.1:41778->127.0.0.1:38319: read: connection reset by peer)
 === static / first: probe in static_agent on SSL_write, SSL_write_ex
   AGENT(static) one TLS connection, cert OK
   AGENT(static) request 1 /v1/items    -> server replied 'HTTP/1.1 200 OK'

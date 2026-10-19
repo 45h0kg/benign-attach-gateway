@@ -28,6 +28,8 @@ bash experiments/agents/build.sh; echo "stage 6 build exit: $?"
 python3 experiments/tls_gate_demo.py all both; echo "stage 6 exit: $?"
 stage "STAGE 7: STREAM GATE ACCOUNTING (one write over several TLS records, then exfil)"
 python3 experiments/tls_gate_multirecord.py; echo "stage 7 exit: $?"
+stage "STAGE 8: CONCURRENT SESSIONS (two interleaved TLS sessions in one process, exfil must not cross)"
+python3 experiments/tls_gate_concurrent.py; echo "stage 8 exit: $?"
 echo; echo "RUN COMPLETE $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
 } 2>&1 | tee "$LOG"
 python3 experiments/gen_results_md.py

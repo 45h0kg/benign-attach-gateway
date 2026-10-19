@@ -31,6 +31,7 @@ def main():
     clang = re.search(r"clang version (\d+)", log).group(1)
     gate = re.findall(r"RESULT (\w+)/(\w+): (PASS|EXPLOIT CONFIRMED|FAIL|unexpected)", log)
     mr = re.search(r"RESULT multirecord: (PASS|FAIL)", log)
+    conc = re.search(r"RESULT concurrent: (PASS|FAIL)", log)
     md = f"""# Canonical run results
 
 One logged run, all stages green: `bash experiments/run_all.sh` (`execution_log.txt`, {date}).
@@ -87,6 +88,7 @@ Stage 6, three TLS runtimes x two gate forms on one keep-alive connection (benig
     for rt, mode, res in gate:
         md += f"- {rt} / {mode}: {res}\n"
     md += f"\nStage 7, stream-gate accounting (one 40 KiB write over three records, then exfil): {mr.group(1) if mr else 'n/a'}.\n"
+    md += f"Stage 8, two interleaved TLS sessions in one process (exfil must not cross to the benign session): {conc.group(1) if conc else 'n/a'}.\n"
     md += "Details and agent transcripts: `RESULTS_TLSGATE.md`, `tls_gate_runtimes.json`.\n"
     open(f"{R}/RESULTS.md", "w").write(md)
     print(f"wrote {R}/RESULTS.md from run of {date}")

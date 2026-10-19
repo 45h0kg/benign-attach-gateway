@@ -166,27 +166,48 @@ def _reset(sock):
 
 
 class WritePool:
-    """Captured plaintext writes, drained from the kernel FIFO, bucketed by pid and TLS handle."""
+    """Captured plaintext writes, drained from the kernel FIFO, bucketed by pid.
+
+    A connection is bound to a TLS session handle by matching the handle's socket to the
+    connection's own agent-side port (`bind_handle`), not by arrival order, so one process
+    multiplexing several TLS sessions is disambiguated. Once bound, writes are taken by handle.
+    """
 
     def __init__(self, probe):
         self.probe = probe
         self.by_pid = collections.defaultdict(collections.deque)
+        self._lock = threading.Lock()        # one pool is shared by every connection's relay
 
     def _pull(self):
         for ev in self.probe.drain():
             self.by_pid[ev["pid"]].append(ev)
+
+    def bind_handle(self, pid, agent_port, timeout=1.0):
+        """The TLS handle whose socket's local port is `agent_port` (the peer port the relay
+        accepted). Resolves handle -> fd -> /proc port via the probe. None if unresolved in time."""
+        t_end = time.monotonic() + timeout
+        while True:
+            with self._lock:
+                self._pull()
+                for ev in list(self.by_pid[pid]):
+                    if ev["handle"] and self.probe.local_port_for(pid, ev["handle"]) == agent_port:
+                        return ev["handle"]
+            if time.monotonic() >= t_end:
+                return None
+            time.sleep(0.005)
 
     def take(self, pid, handle=None, timeout=1.0):
         """Oldest unconsumed write of `pid`; if `handle` is given, oldest write on that TLS object.
         Waits up to `timeout` for the uprobe to deliver one. None = nothing captured (fail closed)."""
         t_end = time.monotonic() + timeout
         while True:
-            self._pull()
-            q = self.by_pid[pid]
-            for i, ev in enumerate(q):
-                if handle is None or ev["handle"] == handle:
-                    del q[i]
-                    return ev
+            with self._lock:
+                self._pull()
+                q = self.by_pid[pid]
+                for i, ev in enumerate(q):
+                    if handle is None or ev["handle"] == handle:
+                        del q[i]
+                        return ev
             if time.monotonic() >= t_end:
                 return None
             time.sleep(0.005)
@@ -224,8 +245,9 @@ def relay_stream(client, server_addr, pid, pool, ml, log):
     """Stream gate: hold EVERY application-data record until the write that produced it is scored."""
     server = socket.create_connection(server_addr)
     threading.Thread(target=splice, args=(server, client), daemon=True).start()
+    agent_port = client.getpeername()[1]   # the accepted connection's agent-side port
     buf = b""
-    handle = None          # TLS object bound to this connection, learned from its first write
+    handle = None          # TLS object bound to this connection by matching its socket to agent_port
     remaining = 0          # plaintext bytes of the current write not yet seen on the wire
     overhead = None        # ciphertext bytes per record beyond the plaintext (nonce + tag), calibrated
     nrec = 0
@@ -239,13 +261,16 @@ def relay_stream(client, server_addr, pid, pool, ml, log):
         nrec += 1
         reclen = len(rec) - 5
         if remaining <= 0:
-            # a new write starts here: fetch its plaintext (bound to this connection's handle)
+            # a new write starts here. On the first record bind this connection to the TLS handle
+            # whose socket is this connection (by port), not by arrival order; then take by handle.
+            if handle is None:
+                handle = pool.bind_handle(pid, agent_port)
             ev = pool.take(pid, handle)
             if ev is None:
                 log.append({"record": nrec, "verdict": "deny", "reason": "no_plaintext", "p": None, "request": ""})
                 _reset(client); server.close(); return
             if handle is None:
-                handle = ev["handle"]
+                handle = ev["handle"]   # fallback: bind to the first write's handle if port lookup lagged
             p, label, reasons = ml.score(ev["data"])
             log.append({"record": nrec, "verdict": label, "p": round(p, 3), "reasons": reasons,
                         "request": ev["data"].split(b"\r\n", 1)[0].decode("latin-1", "replace")})

@@ -9,9 +9,14 @@ and the enforcer never holds a TLS key.
 ## How the plaintext is obtained
 An eBPF uprobe on the agent's TLS write function reads the plaintext buffer at the library boundary,
 *before* it is encrypted (`bpf/ssl_sniff.bpf.c`, `escrow/tlsview.py`). Every write is captured, in
-order, as an event `{pid, tid, handle, len, data[:2048]}` pushed to a kernel FIFO (`writes_q`), where
-`handle` is the TLS object the write was made on (`SSL*` for OpenSSL, `*tls.Conn` for Go) and `len`
-is the full plaintext length of the write. The wire is untouched; this is observation inside the
+order, as an event `{pid, tid, handle, len, data[:16384]}` pushed to a kernel FIFO (`writes_q`), where
+`handle` is the TLS object the write was made on (`SSL*` for OpenSSL, `*tls.Conn` for Go), `len`
+is the full plaintext length of the write, and `data` is up to one full TLS record (16 KiB) of it.
+A second pair of probes records which socket each handle writes to (`fd_by_handle`): exactly, via
+`SSL_set_fd` for OpenSSL, or by the socket write (`syscall.write` for Go, libc `write` as a fallback)
+that immediately follows a TLS write on the same task. Userspace resolves handle -> fd -> local port
+via `/proc`, so each captured write is matched to the connection the relay accepted by that
+connection's agent-side port, never by arrival order. The wire is untouched; this is observation inside the
 agent's own address space, via the kernel. It is the same technique observability tools use -- the
 novelty here is not the capture but gating the connection on it.
 
@@ -29,9 +34,10 @@ runs this gate against a keep-alive agent to show the exploit is real: a benign 
 connection and an exfiltration `POST` on the same connection reaches the server.
 
 **Stream gate** (`stream`, the gate to use). Hold **every** outgoing application-data record until
-the write that produced it has been scored. The relay drains the FIFO, binds the connection to the
-TLS handle of its first write, and thereafter consumes only writes on that handle, so concurrent
-TLS sessions in one process (asyncio-style) cannot cross. A write of `len` plaintext bytes produces
+the write that produced it has been scored. The relay drains the FIFO and binds the connection to
+the TLS handle whose socket is that connection -- matching the handle's resolved local port to the
+agent-side port the relay accepted -- then consumes only writes on that handle, so concurrent TLS
+sessions in one process (asyncio-style, or threads) cannot cross, whatever the interleaving. A write of `len` plaintext bytes produces
 one or more records; the relay calibrates the per-record ciphertext overhead (nonce + tag) from the
 first record and releases records until `len` bytes are accounted for, then treats the next record
 as the start of a new write and fetches its plaintext. A `deny` at any point resets the connection;
@@ -87,12 +93,13 @@ the static-OpenSSL agent exercises the same mechanism (symbol inside the executa
 BoringSSL keeps the `SSL_write(ssl, buf, num)` signature.
 
 ## Limitations
-- The stream gate binds a connection to a TLS handle from its *first* write by arrival order; if two
-  sessions in one process open simultaneously and their first writes interleave, the binding can be
-  wrong for that first write (later writes are keyed by handle). Binding by `SSL_get_fd`/socket cookie
-  instead of arrival order closes this and is the next step.
-- Only the first 2 KiB of each write are captured for scoring (`MAXDATA`); a model that needs whole
-  bodies needs the capture raised or chunked.
+- Up to one full TLS record (16 KiB) of each write is captured (`MAXDATA`); a write longer than one
+  record is seen up to its first record, so a model needing whole multi-record bodies needs the
+  capture chunked across the write's records.
+- Binding resolves handle -> fd -> port through `/proc`; if a connection's first write is captured
+  before the kernel has recorded its socket fd (a race of a few microseconds), the relay falls back
+  to the first write's handle until the fd is bound. `experiments/tls_gate_concurrent.py` exercises
+  two interleaved sessions in one process and confirms the exfil stays on its own connection.
 - HTTP/2: every frame is scored at the byte level, but HEADERS frames are HPACK-compressed, so a
   content model needs a per-connection HPACK decoder to read them; DATA frames are plain.
 - Under a code-controlling adversary (one who ships its own TLS, strips symbols, or inlines

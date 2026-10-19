@@ -1,4 +1,4 @@
-=== CONNECTION ESCROW: FULL REPRODUCTION RUN  2026-10-19 04:13:25 UTC  git: 2613da6
+=== CONNECTION ESCROW: FULL REPRODUCTION RUN  2026-10-19 04:31:48 UTC  git: e588cb4
 --- ENVIRONMENT ---
 Linux vm 6.18.44-fc-v139 #1 SMP PREEMPT_DYNAMIC @0 x86_64 x86_64 x86_64 GNU/Linux
 model name	: Intel(R) Xeon(R) Processor @ 2.10GHz
@@ -10,25 +10,25 @@ iptables v1.8.10 (nf_tables)
 cryptography 50.0.1
 
 --- STAGE 0: BUILD eBPF program ---
-start: 04:13:25 UTC
+start: 04:31:48 UTC
 instructions: 160
 stage 0 exit: 0
 
 --- STAGE 1: ADVERSARIAL SUITE, eBPF cgroup/connect4 hold point ---
-start: 04:13:25 UTC
+start: 04:31:48 UTC
 
 === hold point: bpf ===
   [PASS] T0 allowed: agent connected and got the echo
   [PASS] T0 allowed: destination accepted exactly one connection carrying the parked bytes
-  [PASS] T0 allowed: receipt RELEASED, attributed to the agent pid, pod-a cgroup and SPIFFE id  -- src=bpf_connect4 pid=458 cookie=1
+  [PASS] T0 allowed: receipt RELEASED, attributed to the agent pid, pod-a cgroup and SPIFFE id  -- src=bpf_connect4 pid=8238 cookie=1690
   [PASS] T0 allowed: executable identified by digest
   [PASS] T1 denied: agent's connection was reset  -- ConnectionResetError: [Errno 104] Connection reset by peer
   [PASS] T1 denied: destination never accepted a connection
   [PASS] T1 denied: receipt DENIED by default rule  -- DENY: default
   [PASS] T2 unknown workload: (bpf) a process outside the attached cgroups is not supervised; covered under iptables
-  [PASS] T3 deadline: no verdict in 1000 ms -> reset, DENIED_DEADLINE  -- 1002 ms
+  [PASS] T3 deadline: no verdict in 1000 ms -> reset, DENIED_DEADLINE  -- 1001 ms
   [PASS] T3 deadline: destination never accepted a connection
-  [PASS] T3 deadline: agent released within 1.0-1.6 s  -- 1.08 s
+  [PASS] T3 deadline: agent released within 1.0-1.6 s  -- 1.07 s
   [PASS] T4 late verdict: a correctly signed ALLOW arriving after the deadline is refused  -- stale: escrow id not live (expired or already decided)
   [PASS] T4 late verdict: the verifier's late release did not open anything
   [PASS] T5 forged verdict (wrong key) refused  -- verdict signature invalid
@@ -44,14 +44,14 @@ start: 04:13:25 UTC
   [PASS] T8 HTTP POST /v1/: denied  -- DENY: default
   [PASS] T8 HTTP GET /admin: denied  -- DENY: default
   [PASS] T9 budget 2/min for pod-b: third connection denied  -- ['RELEASED', 'RELEASED', 'DENIED']
-  [PASS] T10 hold -> operator allow within deadline: released  -- released:ef1152d991f05ec2
-  [PASS] T10 hold -> operator deny: reset  -- DENY: refused:901829047a20f025
+  [PASS] T10 hold -> operator allow within deadline: released  -- released:cd950d4f45dd7340
+  [PASS] T10 hold -> operator deny: reset  -- DENY: refused:dacd201dbf7c219f
   [PASS] T11 child process inherits the hold point: denied, destination untouched  -- DENY: default
   [PASS] T11 renamed binary: still attributed to pod-a by cgroup; digest equals the real interpreter  -- not-python
   [PASS] T14 UDP: queries to a public resolver and UDP exfil refused in-kernel (EPERM); cluster resolver allowed  -- {'public_dns': 'PermissionError: [Errno 1] Operation not permitted', 'resolver': 'sent', 'udp_exfil': 'PermissionError: [Errno 1] Operation not permitted'}
   [PASS] T14 DNS over TCP to a public resolver: escrowed and refused  -- DENY: default
   [PASS] T14 kernel counters: udp_denied >= 2, udp_allowed >= 1  -- {'tcp_held': 17, 'udp_allowed': 1, 'udp_denied': 2, 'other_denied': 0}
-  [PASS] T12 verifier unreachable: allowed destination still refused (fail closed)  -- [Errno 111] Connect call failed ('127.0.0.1', 55327)
+  [PASS] T12 verifier unreachable: allowed destination still refused (fail closed)  -- [Errno 111] Connect call failed ('127.0.0.1', 54613)
   [PASS] T13 interceptor and verifier audit chains verify  -- 18 / 17 entries
   [PASS] T13 tampered receipt breaks the chain at that entry
 
@@ -60,12 +60,12 @@ interceptor stats: {"bpf": {"RELEASED": 7, "DENIED": 9, "DENIED_DEADLINE": 1, "D
 stage 1 exit: 0
 
 --- STAGE 2: ADVERSARIAL SUITE, iptables REDIRECT hold point ---
-start: 04:13:29 UTC
+start: 04:31:52 UTC
 
 === hold point: iptables ===
   [PASS] T0 allowed: agent connected and got the echo
   [PASS] T0 allowed: destination accepted exactly one connection carrying the parked bytes
-  [PASS] T0 allowed: receipt RELEASED, attributed to the agent pid, pod-a cgroup and SPIFFE id  -- src=so_original_dst pid=515 cookie=5
+  [PASS] T0 allowed: receipt RELEASED, attributed to the agent pid, pod-a cgroup and SPIFFE id  -- src=so_original_dst pid=8289 cookie=5690
   [PASS] T0 allowed: executable identified by digest
   [PASS] T1 denied: agent's connection was reset  -- ConnectionResetError: [Errno 104] Connection reset by peer
   [PASS] T1 denied: destination never accepted a connection
@@ -73,7 +73,7 @@ start: 04:13:29 UTC
   [PASS] T2 unknown workload: refused even for an allowed destination  -- DENY: unknown_workload
   [PASS] T3 deadline: no verdict in 1000 ms -> reset, DENIED_DEADLINE  -- 1002 ms
   [PASS] T3 deadline: destination never accepted a connection
-  [PASS] T3 deadline: agent released within 1.0-1.6 s  -- 1.06 s
+  [PASS] T3 deadline: agent released within 1.0-1.6 s  -- 1.05 s
   [PASS] T4 late verdict: a correctly signed ALLOW arriving after the deadline is refused  -- stale: escrow id not live (expired or already decided)
   [PASS] T4 late verdict: the verifier's late release did not open anything
   [PASS] T5 forged verdict (wrong key) refused  -- verdict signature invalid
@@ -89,12 +89,12 @@ start: 04:13:29 UTC
   [PASS] T8 HTTP POST /v1/: denied  -- DENY: default
   [PASS] T8 HTTP GET /admin: denied  -- DENY: default
   [PASS] T9 budget 2/min for pod-b: third connection denied  -- ['RELEASED', 'RELEASED', 'DENIED']
-  [PASS] T10 hold -> operator allow within deadline: released  -- released:f0e1d80d760f43e1
-  [PASS] T10 hold -> operator deny: reset  -- DENY: refused:257d674e4686889c
+  [PASS] T10 hold -> operator allow within deadline: released  -- released:4af585cd9a79ac9c
+  [PASS] T10 hold -> operator deny: reset  -- DENY: refused:e35c12c2d1513908
   [PASS] T11 child process inherits the hold point: denied, destination untouched  -- DENY: default
   [PASS] T11 renamed binary: still attributed to pod-a by cgroup; digest equals the real interpreter  -- not-python
   [PASS] T14 UDP pinning needs the kernel path; not applicable to iptables
-  [PASS] T12 verifier unreachable: allowed destination still refused (fail closed)  -- [Errno 111] Connect call failed ('127.0.0.1', 49641)
+  [PASS] T12 verifier unreachable: allowed destination still refused (fail closed)  -- [Errno 111] Connect call failed ('127.0.0.1', 39299)
   [PASS] T13 interceptor and verifier audit chains verify  -- 18 / 17 entries
   [PASS] T13 tampered receipt breaks the chain at that entry
 
@@ -103,35 +103,35 @@ interceptor stats: {"iptables": {"RELEASED": 7, "DENIED": 9, "DENIED_DEADLINE": 
 stage 2 exit: 0
 
 --- STAGE 3: LATENCY, native Ed25519 (cryptography) if available ---
-start: 04:13:33 UTC
-[bpf] baseline agent total 628 us | supervised 4768 us (p95 6798) | hold 3727 us = attribution 746 + peek 74 + verdict rtt 1960 (verifier decide 21) + gate 282 + upstream 393 | 16-way: hold 38786 us, 187.3 conn/s, procs 69
-[iptables] baseline agent total 915 us | supervised 5875 us (p95 7915) | hold 4759 us = attribution 1563 + peek 75 + verdict rtt 2054 (verifier decide 23) + gate 282 + upstream 487 | 16-way: hold 60114 us, 130.8 conn/s, procs 71
+start: 04:31:56 UTC
+[bpf] baseline agent total 742 us | supervised 5474 us (p95 8357) | hold 4292 us = attribution 867 + peek 96 + verdict rtt 2209 (verifier decide 24) + gate 314 + upstream 431 | 16-way: hold 31531 us, 126.4 conn/s, procs 74
+[iptables] baseline agent total 858 us | supervised 7103 us (p95 8570) | hold 5756 us = attribution 2019 + peek 108 + verdict rtt 2445 (verifier decide 30) + gate 343 + upstream 471 | 16-way: hold 59498 us, 100.2 conn/s, procs 74
 stage 3 exit: 0
 
 --- STAGE 4: LATENCY, pure-Python Ed25519 ---
-start: 04:14:13 UTC
-[bpf] baseline agent total 624 us | supervised 8824 us (p95 11270) | hold 7795 us = attribution 688 + peek 65 + verdict rtt 3337 (verifier decide 20) + gate 2929 + upstream 436 | 16-way: hold 80767 us, 105.5 conn/s, procs 71
-[iptables] baseline agent total 695 us | supervised 9278 us (p95 12259) | hold 8283 us = attribution 1453 + peek 65 + verdict rtt 3186 (verifier decide 20) + gate 2829 + upstream 437 | 16-way: hold 99274 us, 86.7 conn/s, procs 71
+start: 04:32:40 UTC
+[bpf] baseline agent total 836 us | supervised 10593 us (p95 13065) | hold 9310 us = attribution 894 + peek 98 + verdict rtt 3685 (verifier decide 25) + gate 3312 + upstream 525 | 16-way: hold 90085 us, 102.7 conn/s, procs 74
+[iptables] baseline agent total 844 us | supervised 11116 us (p95 14262) | hold 9948 us = attribution 1903 + peek 96 + verdict rtt 3624 (verifier decide 26) + gate 3080 + upstream 537 | 16-way: hold 122642 us, 78.5 conn/s, procs 74
 stage 4 exit: 0
 
 --- STAGE 5: CLI END-TO-END (curl as the agent) ---
-start: 04:14:57 UTC
+start: 04:33:28 UTC
 curl (supervised) -> 127.0.0.1:18080 : ok from 18080
 curl (supervised) -> verifier 18443 : exit=56 (56 = connection reset, expected)
 curl (supervised) -> 127.0.0.1:18443 via explicit path again, now from a child shell: RESET
-attached connect4/sendmsg4/sockops to /sys/fs/cgroup/unified/escrow-cli-3974
+attached connect4/sendmsg4/sockops to /sys/fs/cgroup/unified/escrow-cli-11751
 kernel hold point -> 127.0.0.1:15001; UDP pinned to None
 interceptor on ('127.0.0.1', 15001) x1 workers, verifier 127.0.0.1:18443, deadline 2000 ms
-receipt: RELEASED rule[0] {'ip': '127.0.0.1', 'port': 18080, 'source': 'bpf_connect4'} comm=curl pid=3992 cookie=4875
-receipt: DENIED DENY: destination_is_verifier {'ip': '127.0.0.1', 'port': 18443, 'source': 'bpf_connect4'} comm=curl pid=3995 cookie=4876
-receipt: DENIED DENY: destination_is_verifier {'ip': '127.0.0.1', 'port': 18443, 'source': 'bpf_connect4'} comm=curl pid=3998 cookie=4877
+receipt: RELEASED rule[0] {'ip': '127.0.0.1', 'port': 18080, 'source': 'bpf_connect4'} comm=curl pid=11769 cookie=2509
+receipt: DENIED DENY: destination_is_verifier {'ip': '127.0.0.1', 'port': 18443, 'source': 'bpf_connect4'} comm=curl pid=11772 cookie=6485
+receipt: DENIED DENY: destination_is_verifier {'ip': '127.0.0.1', 'port': 18443, 'source': 'bpf_connect4'} comm=curl pid=11775 cookie=2510
 stage 5 exit: 0
 
 --- STAGE 6: CONTENT GATE (TLS plaintext via uprobe + ML, no termination) -- first-record vs stream gate; OpenSSL shared, Go crypto/tls, static OpenSSL ---
-start: 04:14:59 UTC
+start: 04:33:30 UTC
 experiments/agents/build.sh: line 5: go: command not found
 stage 6 build exit: 127
-=== runtime openssl, gate first: uprobe on SSL_write, SSL_write_ex in libssl.so.3, agent pid=4014 (2 probe(s)); relay :43751 -> server :54315
+=== runtime openssl, gate first: uprobe on SSL_write, SSL_write_ex in libssl.so.3, agent pid=11793 (6 probe(s)); relay :35003 -> server :47461
     one keep-alive TLS connection: benign GET, then exfil POST on the same connection
     agent saw:
       AGENT one TLS connection, cert OK
@@ -144,7 +144,7 @@ stage 6 build exit: 127
       /transfer  body='SECRET_CARD=4111111111111111'
     RESULT openssl/first: EXPLOIT CONFIRMED -- first-record gate saw only the GET; the exfil POST rode the released connection to the server
 
-=== runtime openssl, gate stream: uprobe on SSL_write, SSL_write_ex in libssl.so.3, agent pid=4019 (2 probe(s)); relay :46673 -> server :43145
+=== runtime openssl, gate stream: uprobe on SSL_write, SSL_write_ex in libssl.so.3, agent pid=11798 (6 probe(s)); relay :41521 -> server :38593
     one keep-alive TLS connection: benign GET, then exfil POST on the same connection
     agent saw:
       AGENT one TLS connection, cert OK
@@ -157,7 +157,7 @@ stage 6 build exit: 127
       /v1/items  body=''
     RESULT openssl/stream: PASS -- benign allowed, exfil on the same connection denied mid-stream on its plaintext, server received only the benign request
 
-=== runtime go, gate first: uprobe on crypto/tls.(*Conn).Write in go_agent, agent pid=4025 (1 probe(s)); relay :35565 -> server :56455
+=== runtime go, gate first: uprobe on crypto/tls.(*Conn).Write in go_agent, agent pid=11807 (2 probe(s)); relay :37807 -> server :40005
     one keep-alive TLS connection: benign GET, then exfil POST on the same connection
     agent saw:
       AGENT(go) one TLS connection, cert OK
@@ -170,12 +170,12 @@ stage 6 build exit: 127
       /transfer  body='SECRET_CARD=4111111111111111'
     RESULT go/first: EXPLOIT CONFIRMED -- first-record gate saw only the GET; the exfil POST rode the released connection to the server
 
-=== runtime go, gate stream: uprobe on crypto/tls.(*Conn).Write in go_agent, agent pid=4033 (1 probe(s)); relay :40003 -> server :40965
+=== runtime go, gate stream: uprobe on crypto/tls.(*Conn).Write in go_agent, agent pid=11815 (2 probe(s)); relay :38319 -> server :60349
     one keep-alive TLS connection: benign GET, then exfil POST on the same connection
     agent saw:
       AGENT(go) one TLS connection, cert OK
       AGENT(go) request 1 /v1/items    -> server replied "HTTP/1.1 200 OK"
-      AGENT(go) request 2 /transfer    -> BLOCKED (read tcp 127.0.0.1:41212->127.0.0.1:40003: read: connection reset by peer)
+      AGENT(go) request 2 /transfer    -> BLOCKED (read tcp 127.0.0.1:41778->127.0.0.1:38319: read: connection reset by peer)
     gate decisions (on plaintext captured from inside TLS):
       record 1: ALLOW p=0.001  GET /v1/items HTTP/1.1   reasons=[]
       record 2: DENY  p=0.999  POST /transfer HTTP/1.1   reasons=['sensitive_kw', 'pan_like', 'sensitive_path', 'mutating']
@@ -183,7 +183,7 @@ stage 6 build exit: 127
       /v1/items  body=''
     RESULT go/stream: PASS -- benign allowed, exfil on the same connection denied mid-stream on its plaintext, server received only the benign request
 
-=== runtime static, gate first: uprobe on SSL_write, SSL_write_ex in static_agent, agent pid=4041 (2 probe(s)); relay :43777 -> server :54387
+=== runtime static, gate first: uprobe on SSL_write, SSL_write_ex in static_agent, agent pid=11826 (8 probe(s)); relay :43553 -> server :60831
     one keep-alive TLS connection: benign GET, then exfil POST on the same connection
     agent saw:
       AGENT(static) one TLS connection, cert OK
@@ -196,7 +196,7 @@ stage 6 build exit: 127
       /transfer  body='SECRET_CARD=4111111111111111'
     RESULT static/first: EXPLOIT CONFIRMED -- first-record gate saw only the GET; the exfil POST rode the released connection to the server
 
-=== runtime static, gate stream: uprobe on SSL_write, SSL_write_ex in static_agent, agent pid=4052 (2 probe(s)); relay :43817 -> server :59729
+=== runtime static, gate stream: uprobe on SSL_write, SSL_write_ex in static_agent, agent pid=11834 (8 probe(s)); relay :35975 -> server :46891
     one keep-alive TLS connection: benign GET, then exfil POST on the same connection
     agent saw:
       AGENT(static) one TLS connection, cert OK
@@ -213,7 +213,7 @@ stage 6 build exit: 127
 stage 6 exit: 0
 
 --- STAGE 7: STREAM GATE ACCOUNTING (one write over several TLS records, then exfil) ---
-start: 04:15:27 UTC
+start: 04:34:04 UTC
 === stream gate, one write spanning several records (OpenSSL/Python agent)
       AGENT request 1 (40076 bytes, one write) -> server replied b'HTTP/1.1 200 OK'
       AGENT request 2 -> BLOCKED (ConnectionResetError)
@@ -223,4 +223,23 @@ start: 04:15:27 UTC
     RESULT multirecord: PASS -- 3 records released as one scored write; the next record was recognised as a new write and denied
 stage 7 exit: 0
 
-RUN COMPLETE 2026-10-19 04:15:31 UTC
+--- STAGE 8: CONCURRENT SESSIONS (two interleaved TLS sessions in one process, exfil must not cross) ---
+start: 04:34:08 UTC
+=== two concurrent TLS sessions in one process (pid 11855), writes interleaved
+    agent saw:
+      CONN B localport 39494
+      CONN A localport 39484
+      CONN A /v1/items -> ok
+      CONN B /v1/items -> ok
+      CONN B /transfer -> BLOCKED (ConnectionResetError)
+      CONN A /v1/status -> ok
+    per-connection gate decisions (keyed by agent port):
+      port 39484 record 1: ALLOW p=0.001  GET /v1/items HTTP/1.1
+      port 39484 record 2: ALLOW p=0.001  GET /v1/status HTTP/1.1
+      port 39494 record 1: ALLOW p=0.001  GET /v1/items HTTP/1.1
+      port 39494 record 2: DENY  p=0.999  POST /transfer HTTP/1.1
+    server received: ['/v1/items', '/v1/items', '/v1/status']
+    RESULT concurrent: PASS -- the exfil on one session was denied without crossing the benign session, which completed
+stage 8 exit: 0
+
+RUN COMPLETE 2026-10-19 04:34:11 UTC

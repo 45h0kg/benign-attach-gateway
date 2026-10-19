@@ -145,7 +145,7 @@
   "agent": [
    "AGENT(go) one TLS connection, cert OK",
    "AGENT(go) request 1 /v1/items    -> server replied \"HTTP/1.1 200 OK\"",
-   "AGENT(go) request 2 /transfer    -> BLOCKED (read tcp 127.0.0.1:41212->127.0.0.1:40003: read: connection reset by peer)"
+   "AGENT(go) request 2 /transfer    -> BLOCKED (read tcp 127.0.0.1:41778->127.0.0.1:38319: read: connection reset by peer)"
   ],
   "pass": true
  },
